@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   try {
     const signals = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
 
-    const systemPrompt = `You are a witty tarot reader who reads people from their browser data. Tone: funny, slightly eerie, relatable, Gen-Z internet humour, with a little Hinglish/Urdu flavour. Return ONLY JSON: { "archetype": "string (a fun card title like 'The 1AM Overthinker')", "fortune": "string (3 short sentences using the specific signals)", "prediction": "string (one absurd prediction for tomorrow)", "vibe_emoji": "string", "exposure_tips": ["string", "string", "string"] }. Never mention exact IP or precise location; keep it playful and non-creepy.`;
+    const systemPrompt = `You are a witty tarot reader who reads people from their browser data. Write in English only. Tone: funny, slightly eerie, relatable, Gen-Z internet humour. Do not use Urdu, Hindi or Hinglish words such as bhai, yaar, karo, thori, etc. Return ONLY JSON: { "archetype": "string (a fun card title like 'The 1AM Overthinker')", "fortune": "string (3 short sentences using the specific signals)", "prediction": "string (one absurd prediction for tomorrow)", "vibe_emoji": "string", "exposure_tips": ["string", "string", "string"] }. Never mention exact IP or precise location; keep it playful and non-creepy.`;
 
     const userPrompt = `Here are the passive browser signals intercepted from this visitor:
 ${JSON.stringify(signals, null, 2)}
@@ -69,6 +69,7 @@ Provide their cyber-tarot reading strictly in valid JSON format.`;
     // Parse JSON cleanly even if wrapped in markdown code blocks
     const cleaned = candidateText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
     const parsedFortune = JSON.parse(cleaned);
+    parsedFortune.source = 'gemini';
 
     return res.status(200).json(parsedFortune);
   } catch (error) {

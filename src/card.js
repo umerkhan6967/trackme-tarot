@@ -127,53 +127,58 @@ export function generateTarotCardCanvas({ fortune, fingerprint, score }) {
   // 3. Card Header Bar
   ctx.textAlign = 'center';
   ctx.fillStyle = '#a855f7';
-  ctx.font = '700 20px monospace';
-  ctx.letterSpacing = '4px';
-  ctx.fillText('◈ TRACKMETAROT // ZERO-LOGIN DIVINATION ◈', 540, 100);
+  ctx.font = '700 18px monospace';
+  ctx.letterSpacing = '3px';
+  ctx.fillText('◈ TRACKMETAROT // ZERO-LOGIN DIVINATION ◈', 540, 88);
 
   ctx.fillStyle = '#00ff9d';
-  ctx.font = '700 24px "Cinzel", serif, monospace';
-  const headerMeta = `ARCANUM ${fortune.numeral || 'VII'}  •  ${fortune.suit || 'SUIT OF CIPHERS'}`;
-  ctx.fillText(headerMeta, 540, 138);
+  ctx.font = '700 22px "Cinzel", serif, monospace';
+  const headerMeta = `ARCANUM ${fortune.numeral || 'XVIII'}  •  ${fortune.suit || 'SUIT OF CIPHERS'}`;
+  ctx.fillText(headerMeta, 540, 120);
 
   // Divider line
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
   ctx.beginPath();
-  ctx.moveTo(140, 160);
-  ctx.lineTo(940, 160);
+  ctx.moveTo(140, 138);
+  ctx.lineTo(940, 138);
   ctx.stroke();
 
   // 4. Large Vibe Emoji Avatar
   const emoji = fortune.vibe_emoji || fortune.avatar || '🔮';
-  ctx.font = '115px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+  ctx.font = '85px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
   ctx.textAlign = 'center';
   ctx.shadowColor = 'rgba(0, 255, 157, 0.4)';
-  ctx.shadowBlur = 30;
-  ctx.fillText(emoji, 540, 280);
+  ctx.shadowBlur = 24;
+  ctx.fillText(emoji, 540, 224);
   ctx.shadowBlur = 0;
 
   // 5. Archetype Title
   const title = (fortune.archetype || fortune.title || 'THE DIGITAL PHANTOM').toUpperCase();
   ctx.fillStyle = '#ffffff';
-  ctx.font = '900 44px "Cinzel", serif, sans-serif';
+  let titleSize = 48;
+  ctx.font = `900 ${titleSize}px "Cinzel", serif, sans-serif`;
+  while (ctx.measureText(title).width > 900 && titleSize > 34) {
+    titleSize -= 2;
+    ctx.font = `900 ${titleSize}px "Cinzel", serif, sans-serif`;
+  }
   ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
   ctx.shadowBlur = 16;
-  ctx.fillText(title, 540, 350);
+  ctx.fillText(title, 540, 285);
   ctx.shadowBlur = 0;
 
   // Subtitle
   ctx.fillStyle = '#00ff9d';
-  ctx.font = '600 20px monospace';
-  ctx.fillText(fortune.subtitle || `Aura: ${emoji} // Certified Footprint`, 540, 388);
+  ctx.font = '600 22px monospace';
+  ctx.fillText(fortune.subtitle || `Aura: ${emoji} // Certified Footprint`, 540, 320);
 
   // 6. Digital Exposure Score Box
-  const scoreBoxY = 422;
-  const scoreBoxW = 760;
-  const scoreBoxH = 68;
+  const scoreBoxY = 345;
+  const scoreBoxW = 840;
+  const scoreBoxH = 66;
   const scoreBoxX = (1080 - scoreBoxW) / 2;
 
   // Score Box Background
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
   roundRect(ctx, scoreBoxX, scoreBoxY, scoreBoxW, scoreBoxH, 12);
   ctx.fill();
   ctx.strokeStyle = 'rgba(176, 38, 255, 0.5)';
@@ -183,16 +188,16 @@ export function generateTarotCardCanvas({ fortune, fingerprint, score }) {
   // Score text
   ctx.textAlign = 'left';
   ctx.fillStyle = '#94a3b8';
-  ctx.font = '700 18px monospace';
+  ctx.font = '700 22px monospace';
   ctx.fillText('DIGITAL EXPOSURE SCORE:', scoreBoxX + 24, scoreBoxY + 41);
 
   ctx.textAlign = 'right';
   ctx.fillStyle = score.score >= 75 ? '#ff4757' : (score.score >= 50 ? '#f59e0b' : '#00ff9d');
-  ctx.font = '900 26px monospace';
+  ctx.font = '900 28px monospace';
   ctx.fillText(`${score.score}/100 [${(score.level || 'HIGH').toUpperCase()}]`, scoreBoxX + scoreBoxW - 24, scoreBoxY + 43);
 
   // 7. Telemetry Signals Pill Strip
-  const telY = 520;
+  const telY = 426;
   const telemetryBadges = [
     `${fingerprint.cores || 4} CPU Cores`,
     `${fingerprint.resolution || '1920x1080'}`,
@@ -208,33 +213,33 @@ export function generateTarotCardCanvas({ fortune, fingerprint, score }) {
 
   telemetryBadges.forEach((badge, idx) => {
     const bx = startBadgeX + idx * (badgeWidth + badgeGap);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
     roundRect(ctx, bx, telY, badgeWidth, 38, 8);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.stroke();
 
     ctx.fillStyle = '#cbd5e1';
-    ctx.font = '600 14px monospace';
-    ctx.fillText(badge, bx + badgeWidth / 2, telY + 24);
+    ctx.font = '700 18px monospace';
+    ctx.fillText(badge, bx + badgeWidth / 2, telY + 25);
   });
 
   // 8. The Fortune Reading
-  const quoteBoxY = 595;
+  const quoteBoxY = 485;
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'italic 500 24px monospace';
+  ctx.font = 'italic 600 28px "JetBrains Mono", monospace';
   ctx.textAlign = 'center';
   const fortuneText = `"${fortune.fortune || fortune.quote || ''}"`;
-  const nextY = wrapText(ctx, fortuneText, 540, quoteBoxY + 36, 880, 36, true);
+  const nextY = wrapText(ctx, fortuneText, 540, quoteBoxY + 34, 880, 42, true);
 
   // 9. Tomorrow's Absurd Prophecy Box
-  const propY = Math.max(nextY + 25, 785);
+  const propY = Math.max(nextY + 18, 690);
   const propW = 880;
   const propX = (1080 - propW) / 2;
-  const propH = 180;
+  const propH = 155;
 
   ctx.fillStyle = 'rgba(176, 38, 255, 0.08)';
-  roundRect(ctx, propX, propY, propW, propH, 16);
+  roundRect(ctx, propX, propY, propW, propH, 14);
   ctx.fill();
   ctx.strokeStyle = 'rgba(176, 38, 255, 0.4)';
   ctx.lineWidth = 1.5;
@@ -242,41 +247,44 @@ export function generateTarotCardCanvas({ fortune, fingerprint, score }) {
 
   ctx.textAlign = 'left';
   ctx.fillStyle = '#c084fc';
-  ctx.font = '700 17px monospace';
-  ctx.fillText('🔮 TOMORROW\'S PROPHECY:', propX + 28, propY + 38);
+  ctx.font = '700 22px monospace';
+  ctx.fillText('🔮 TOMORROW\'S PROPHECY:', propX + 26, propY + 36);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = '500 20px monospace';
+  ctx.font = '500 26px monospace';
   const predText = fortune.prediction || 'You will open a new browser tab to search something and forget what it was.';
-  wrapText(ctx, predText, propX + 28, propY + 75, propW - 56, 30);
+  wrapText(ctx, predText, propX + 26, propY + 76, propW - 52, 35);
 
   // 10. Exposure Mitigation Protocols (Fix-it) summary
-  const fixY = propY + propH + 28;
+  const fixY = propY + propH + 20;
   const tips = (fortune.exposure_tips || fortune.tips || []).slice(0, 2);
   if (tips.length) {
     ctx.textAlign = 'left';
     ctx.fillStyle = '#00ff9d';
-    ctx.font = '700 15px monospace';
-    ctx.fillText('⚡ KEY EXPOSURE PROTOCOL:', propX + 28, fixY + 16);
+    ctx.font = '700 22px monospace';
+    ctx.fillText('⚡ KEY EXPOSURE PROTOCOL:', propX + 26, fixY + 16);
 
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '16px monospace';
-    ctx.fillText(`• ${tips[0]}`, propX + 28, fixY + 44);
-    if (tips[1]) {
-      ctx.fillText(`• ${tips[1]}`, propX + 28, fixY + 72);
-    }
+    ctx.font = '500 23px monospace';
+    let currentTipY = fixY + 48;
+    tips.forEach((tip) => {
+      currentTipY = wrapText(ctx, `• ${tip}`, propX + 26, currentTipY, propW - 52, 30);
+    });
   }
 
   // 11. Watermark & Branding at Bottom
   ctx.textAlign = 'center';
   ctx.fillStyle = '#64748b';
-  ctx.font = '700 18px monospace';
+  ctx.font = '700 22px monospace';
   ctx.letterSpacing = '3px';
-  ctx.fillText('◈ TRACKMETAROT ◈', 540, 1240);
+  ctx.fillText('◈ TRACKMETAROT ◈', 540, 1245);
 
-  ctx.fillStyle = 'rgba(0, 255, 157, 0.8)';
-  ctx.font = '600 15px monospace';
-  ctx.fillText('THE INTERNET ALREADY KNOWS YOU  //  TRACKMETAROT.VERCEL.APP', 540, 1272);
+  ctx.fillStyle = 'rgba(0, 255, 157, 0.85)';
+  ctx.font = '600 17px monospace';
+  ctx.letterSpacing = '1px';
+  ctx.fillText('THE INTERNET ALREADY KNOWS YOU  //  TRACKMETAROT.VERCEL.APP', 540, 1280);
+
+  return canvas;
 
   return canvas;
 }
@@ -358,12 +366,8 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   const canvas = generateTarotCardCanvas({ fortune, fingerprint, score });
   const dataUrl = canvas.toDataURL('image/png');
 
-  const batteryDisplay = fingerprint.batteryStatus 
-    ? `${fingerprint.batteryStatus.level}% ${fingerprint.batteryStatus.charging ? '(charging)' : ''}` 
-    : 'Shielded';
-
-  const oracleBadgeText = fortune.isAiGenerated 
-    ? '<span class="ai-badge">✦ GEMINI NEURAL DIVINATION</span>' 
+  const oracleBadgeText = (fortune.source === 'gemini' || fortune.isAiGenerated)
+    ? '<span class="ai-badge">✦ Written live by Gemini AI</span>' 
     : '<span class="local-badge">◈ CIPHER MATRIX DECODED</span>';
 
   // Fix-it cards from exposure tips
@@ -396,11 +400,11 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
 
   const levelClass = (score.level || 'Medium').toLowerCase().replace(/\s+/g, '-');
 
-  const cardHtml = `
-    <!-- 1. High-Res 1080x1350 Tarot Canvas Preview Card -->
+  // 1. High-Res 1080x1350 Tarot Canvas Preview Card (Left Column)
+  const cardOnlyHtml = `
     <article class="tarot-card-canvas-wrap" id="active-tarot-card" aria-label="Tarot Card: ${fortune.archetype || fortune.title}">
       <div class="card-preview-header">
-        <span class="preview-tag">ARCANUM ${fortune.numeral || 'VII'}</span>
+        <span class="preview-tag">ARCANUM ${fortune.numeral || 'XVIII'}</span>
         <span class="preview-origin">${oracleBadgeText}</span>
         <span class="preview-res">1080×1350 HD</span>
       </div>
@@ -408,8 +412,10 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
         <img class="tarot-canvas-img" src="${dataUrl}" alt="TrackMe Tarot Card - ${fortune.archetype || fortune.title}" id="tarot-rendered-image" />
       </div>
     </article>
+  `;
 
-    <!-- 2. Exposure Score & Circular Gauge Section -->
+  // 2. Exposure Score & Circular Gauge Section (Right Column)
+  const dashboardHtml = `
     <section class="exposure-dashboard" aria-label="Exposure Score Analysis">
       <div class="dashboard-header">
         <span class="dashboard-tag">&gt; TELEMETRY EXPOSURE AUDIT</span>
@@ -466,7 +472,16 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
     </section>
   `;
 
-  container.innerHTML = cardHtml;
+  // Inject card into tarot-card-container
+  container.innerHTML = cardOnlyHtml;
+
+  // Inject dashboard into exposure-dashboard-container
+  const dashboardContainer = document.getElementById('exposure-dashboard-container');
+  if (dashboardContainer) {
+    dashboardContainer.innerHTML = dashboardHtml;
+  } else {
+    container.insertAdjacentHTML('beforeend', dashboardHtml);
+  }
 
   // Trigger smooth gauge animation
   animateGauge(score.score);

@@ -14,33 +14,41 @@
 
 export function calculateExposureScore(data) {
   const signals = data?.signals || data || {};
-  let totalScore = 10; // Baseline entry score for standard browser runtime
+  let totalScore = 18; // Calibrated baseline for modern web environments
   const breakdown = [];
 
-  // 1. Canvas Fingerprint Availability
+  // Deterministic signal hash for realistic variance (-3 to +3)
+  const seedString = `${signals.canvasHash || ''}-${signals.hardware?.cores || ''}-${signals.screen?.resolution || ''}-${signals.timezone || ''}`;
+  let hashVal = 0;
+  for (let i = 0; i < seedString.length; i++) {
+    hashVal = (hashVal * 31 + seedString.charCodeAt(i)) | 0;
+  }
+  const variance = ((Math.abs(hashVal) % 7) - 3); // between -3 and +3
+
+  // 1. Canvas Fingerprint Availability (+12)
   const canvasHash = signals.canvasHash || data?.canvasHash;
   if (canvasHash && canvasHash !== 'unknown') {
-    const points = 18;
+    const points = 12;
     totalScore += points;
     breakdown.push({
       label: 'Canvas Fingerprint Exposed',
       points: `+${points}`,
-      why: '2D graphics rendering nuances generate an instant device hash without cookies.'
+      why: '2D graphics rendering nuances generate a persistent device hash without cookies.'
     });
   }
 
-  // 2. System Fonts Inventory
+  // 2. System Fonts Inventory (+7 or +11)
   const fontCount = signals.fonts?.installedCount ?? data?.fontsInstalledCount ?? 0;
   if (fontCount >= 18) {
-    const points = 16;
+    const points = 11;
     totalScore += points;
     breakdown.push({
       label: 'Distinctive Font Matrix',
       points: `+${points}`,
-      why: `${fontCount} common system fonts detected, isolating your profile into a narrow demographic slice.`
+      why: `${fontCount} system fonts detected, isolating your profile into a narrow demographic slice.`
     });
-  } else if (fontCount >= 10) {
-    const points = 10;
+  } else if (fontCount >= 8) {
+    const points = 7;
     totalScore += points;
     breakdown.push({
       label: 'Font Inventory Profile',
@@ -49,22 +57,10 @@ export function calculateExposureScore(data) {
     });
   }
 
-  // 3. Battery API Exposure
-  const hasBattery = (signals.battery && signals.battery !== 'unsupported' && signals.battery !== 'unknown') || (data?.batteryStatus !== null && data?.batteryStatus !== undefined);
-  if (hasBattery) {
-    const points = 14;
-    totalScore += points;
-    breakdown.push({
-      label: 'Live Battery Telemetry',
-      points: `+${points}`,
-      why: 'Real-time battery percentage and charging cycles allow cross-tab session stitching.'
-    });
-  }
-
-  // 4. Ad Blocker Defense
+  // 3. Ad Blocker Defense (+10)
   const adBlocker = signals.privacy?.adBlockerDetected ?? data?.adBlockerDetected;
   if (adBlocker === false) {
-    const points = 15;
+    const points = 10;
     totalScore += points;
     breakdown.push({
       label: 'No Ad-Blocker Active',
@@ -73,10 +69,22 @@ export function calculateExposureScore(data) {
     });
   }
 
-  // 5. Do Not Track (DNT) Header
+  // 4. Battery API Exposure (+8)
+  const hasBattery = (signals.battery && signals.battery !== 'unsupported' && signals.battery !== 'unknown') || (data?.batteryStatus !== null && data?.batteryStatus !== undefined);
+  if (hasBattery) {
+    const points = 8;
+    totalScore += points;
+    breakdown.push({
+      label: 'Live Battery Telemetry',
+      points: `+${points}`,
+      why: 'Real-time battery percentage and charging status allow cross-tab session stitching.'
+    });
+  }
+
+  // 5. Do Not Track (DNT) Header (+7)
   const dnt = signals.privacy?.doNotTrack ?? data?.doNotTrack;
   if (dnt !== true) {
-    const points = 10;
+    const points = 7;
     totalScore += points;
     breakdown.push({
       label: 'Do-Not-Track Disabled',
@@ -85,12 +93,12 @@ export function calculateExposureScore(data) {
     });
   }
 
-  // 6. Precise Screen Size & Retina DPI
+  // 6. Precise Screen Size & High-DPI (+6)
   const res = signals.screen?.resolution ?? data?.resolution ?? '1920x1080';
   const pixelRatio = signals.screen?.pixelRatio ?? data?.pixelRatio ?? 1;
-  const [w, h] = res.split('x').map(Number);
+  const [w, h] = String(res).split('x').map(Number);
   if ((w && w >= 1920) || pixelRatio > 1.2) {
-    const points = 10;
+    const points = 6;
     totalScore += points;
     breakdown.push({
       label: 'Precision Display Geometry',
@@ -99,38 +107,60 @@ export function calculateExposureScore(data) {
     });
   }
 
-  // 7. Hardware Architecture (Cores & RAM)
+  // 7. Hardware Architecture (Cores & RAM) (+6)
   const cores = signals.hardware?.cores ?? data?.cores ?? 4;
   if (typeof cores === 'number' && cores >= 8) {
-    const points = 8;
+    const points = 6;
     totalScore += points;
     breakdown.push({
       label: 'High-Thread Concurrency',
       points: `+${points}`,
       why: `${cores} CPU execution threads reveal high-end hardware classification.`
     });
-  }
-
-  // 8. Network Connection API
-  const conn = signals.connection;
-  if (conn && conn !== 'unsupported' && conn !== 'unknown') {
-    const points = 5;
+  } else if (typeof cores === 'number' && cores >= 4) {
+    const points = 4;
     totalScore += points;
     breakdown.push({
-      label: 'Network Information API',
+      label: 'Standard Multi-Core CPU',
+      points: `+${points}`,
+      why: `${cores} CPU execution threads contribute to system capability tiering.`
+    });
+  }
+
+  // 8. GPU / WebGL Intercept (+6)
+  const webgl = signals.webgl || data?.webgl;
+  if (webgl?.renderer && webgl.renderer !== 'unknown') {
+    const points = 6;
+    totalScore += points;
+    breakdown.push({
+      label: 'WebGL GPU Pipeline',
+      points: `+${points}`,
+      why: 'Unmasked graphics card driver telemetry provides precise hardware fingerprinting.'
+    });
+  }
+
+  // 9. Network Connection API (+4)
+  const conn = signals.connection;
+  if (conn && conn !== 'unsupported' && conn !== 'unknown') {
+    const points = 4;
+    totalScore += points;
+    breakdown.push({
+      label: 'Network Telemetry API',
       points: `+${points}`,
       why: 'Effective connection speed and latency reveal ISP transport characteristics.'
     });
   }
 
-  // Clamp score between 0 and 100
-  const score = Math.min(100, Math.max(0, totalScore));
+  // Add subtle deterministic variance to avoid artificial identical scores
+  totalScore += variance;
+
+  // Cap typical results realistically between 35 and 92 (rarely hits 100)
+  const score = Math.min(92, Math.max(35, totalScore));
 
   // Determine Level: 'Low' | 'Medium' | 'High' | 'Very High'
   let level = 'Medium';
-  if (score >= 80) level = 'Very High';
-  else if (score >= 60) level = 'High';
-  else if (score >= 35) level = 'Medium';
+  if (score >= 78) level = 'High';
+  else if (score >= 55) level = 'Medium';
   else level = 'Low';
 
   return {

@@ -105,36 +105,44 @@
           <h2 class="result-heading" aria-live="assertive">YOUR DIGITAL REVELATION</h2>
         </header>
 
-        <!-- Tarot Card Container (populated by card.js) -->
-        <div id="tarot-card-container" class="tarot-card-container"></div>
+        <div class="result-grid">
+          <!-- Left Column: Sticky Card + Action Buttons -->
+          <div class="result-left-column">
+            <!-- Tarot Card Container (populated with card canvas by card.js) -->
+            <div id="tarot-card-container" class="tarot-card-container"></div>
 
-        <!-- Action Controls -->
-        <div class="result-actions">
-          <button id="btn-download" class="cyber-btn primary" type="button">
-            <span class="icon">📥</span> DOWNLOAD IMAGE
-          </button>
-          <button id="btn-share" class="cyber-btn secondary" type="button">
-            <span class="icon">🔗</span> SHARE
-          </button>
-          <button id="btn-rescan" class="cyber-btn tertiary" type="button">
-            <span class="icon">↺</span> READ AGAIN
-          </button>
-        </div>
+            <!-- Action Controls directly under the card -->
+            <div class="result-actions">
+              <button id="btn-download" class="cyber-btn primary" type="button">
+                <span class="icon">📥</span> DOWNLOAD IMAGE
+              </button>
+              <button id="btn-share" class="cyber-btn secondary" type="button">
+                <span class="icon">🔗</span> SHARE
+              </button>
+              <button id="btn-rescan" class="cyber-btn tertiary" type="button">
+                <span class="icon">↺</span> READ AGAIN
+              </button>
+            </div>
 
-        <!-- Direct Social Shortcuts -->
-        <div class="social-share-bar">
-          <span class="social-label">QUICK SHARE:</span>
-          <a id="share-whatsapp" class="social-chip whatsapp" target="_blank" rel="noopener noreferrer" href="#">
-            <span>💬</span> WhatsApp
-          </a>
-          <a id="share-linkedin" class="social-chip linkedin" target="_blank" rel="noopener noreferrer" href="#">
-            <span>💼</span> LinkedIn
-          </a>
-          <button id="btn-copy-link" class="social-chip copy" type="button">
-            <span>📋</span> Copy Text
-          </button>
+            <!-- Direct Social Shortcuts -->
+            <div class="social-share-bar">
+              <span class="social-label">QUICK SHARE:</span>
+              <a id="share-whatsapp" class="social-chip whatsapp" target="_blank" rel="noopener noreferrer" href="#">
+                <span>💬</span> WhatsApp
+              </a>
+              <a id="share-linkedin" class="social-chip linkedin" target="_blank" rel="noopener noreferrer" href="#">
+                <span>💼</span> LinkedIn
+              </a>
+              <button id="btn-copy-link" class="social-chip copy" type="button">
+                <span>📋</span> Copy Text
+              </button>
+            </div>
+            <div id="copy-feedback" class="copy-feedback hidden">Prophecy copied to clipboard!</div>
+          </div>
+
+          <!-- Right Column: Score, Gauge & Breakdown -->
+          <div id="exposure-dashboard-container" class="result-right-column"></div>
         </div>
-        <div id="copy-feedback" class="copy-feedback hidden">Prophecy copied to clipboard!</div>
       </div>
     </section>
 

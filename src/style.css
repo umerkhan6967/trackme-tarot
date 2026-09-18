@@ -144,8 +144,9 @@ html, body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 1.5rem 1rem;
-  max-width: 680px;
+  padding: 1.5rem 1.5rem;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -181,6 +182,9 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 1.75rem;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
 }
 
 .cyber-sigil {
@@ -308,6 +312,8 @@ html, body {
    -------------------------------------------------------------------------- */
 .terminal-window {
   width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
   background: var(--bg-surface);
   border: 1px solid var(--border-neon-violet);
   border-radius: var(--radius-md);
@@ -463,10 +469,14 @@ html, body {
   align-items: center;
   gap: 1.5rem;
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .result-header {
   text-align: center;
+  width: 100%;
+  margin-bottom: 0.5rem;
 }
 
 .oracle-badge {
@@ -483,19 +493,45 @@ html, body {
 
 .result-heading {
   font-family: var(--font-mystic);
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   letter-spacing: 0.1em;
   color: #fff;
   text-transform: uppercase;
 }
 
-.tarot-card-container {
+/* 2-Column Grid Layout for Result Screen (45% left card, 55% right dashboard) */
+.result-grid {
+  display: grid;
+  grid-template-columns: 45% 55%;
+  gap: 2.5rem;
   width: 100%;
+  max-width: 1200px;
+  align-items: start;
+}
+
+.result-left-column {
+  position: sticky;
+  top: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.25rem;
+  width: 100%;
+  z-index: 5;
+}
+
+.tarot-card-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
   perspective: 1000px;
+}
+
+.result-right-column {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
 }
 
 /* The actual Card Element */
@@ -774,7 +810,7 @@ html, body {
   display: flex;
   gap: 0.6rem;
   width: 100%;
-  max-width: 420px;
+  max-width: 520px;
 }
 
 .cyber-btn {
@@ -841,7 +877,7 @@ html, body {
   flex-wrap: wrap;
   gap: 0.5rem;
   width: 100%;
-  max-width: 420px;
+  max-width: 520px;
   padding: 0.6rem 0.75rem;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -903,7 +939,7 @@ html, body {
 /* 1080x1350 Tarot Canvas Preview Card */
 .tarot-card-canvas-wrap {
   width: 100%;
-  max-width: 420px;
+  max-width: 520px;
   background: var(--bg-surface);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-neon-violet);
@@ -926,20 +962,31 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.65rem 1rem;
-  background: rgba(0, 0, 0, 0.6);
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.75);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
+  white-space: nowrap;
 }
 
 .preview-tag {
   color: var(--neon-violet-bright);
+  flex-shrink: 0;
+}
+
+.preview-origin {
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .preview-res {
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .canvas-image-container {
@@ -952,6 +999,7 @@ html, body {
 
 .tarot-canvas-img {
   width: 100%;
+  max-width: 520px;
   height: auto;
   aspect-ratio: 4 / 5;
   display: block;
@@ -974,14 +1022,14 @@ html, body {
    -------------------------------------------------------------------------- */
 .exposure-dashboard {
   width: 100%;
-  max-width: 420px;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   background: var(--bg-surface);
   border: 1px solid var(--border-neon-violet);
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
+  padding: 1.75rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
 }
@@ -2078,6 +2126,26 @@ html, body {
 /* --------------------------------------------------------------------------
    Responsive Tweaks
    -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .result-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .result-left-column {
+    position: static;
+    max-width: 520px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .result-right-column {
+    max-width: 520px;
+    width: 100%;
+    margin: 0 auto;
+  }
+}
+
 @media (max-width: 768px) {
   .hero-stats-strip {
     grid-template-columns: 1fr;
