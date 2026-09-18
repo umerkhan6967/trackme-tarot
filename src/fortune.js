@@ -308,7 +308,7 @@ export async function generateFortune(signals) {
   }
 
   // Console.log the source as requested
-  console.log(`[TrackMe Tarot] Fortune source: ${fortuneData.source}`);
+  console.log('source:', fortuneData.source);
 
   // Add backward-compatible aliases so existing components don't break
   return {

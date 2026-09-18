@@ -366,9 +366,10 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   const canvas = generateTarotCardCanvas({ fortune, fingerprint, score });
   const dataUrl = canvas.toDataURL('image/png');
 
-  const oracleBadgeText = (fortune.source === 'gemini' || fortune.isAiGenerated)
-    ? '<span class="ai-badge">✦ Written live by Gemini AI</span>' 
-    : '<span class="local-badge">◈ CIPHER MATRIX DECODED</span>';
+  const isGemini = fortune.source === 'gemini';
+  const badgeLabel = isGemini ? '✦ Written live by Gemini AI' : 'Offline mode';
+  const oracleBadgeText = `<span class="${isGemini ? 'ai-badge' : 'offline-badge'}">${badgeLabel}</span>`;
+  console.log('source:', fortune.source || (isGemini ? 'gemini' : 'fallback'));
 
   // Fix-it cards from exposure tips
   const tipsArray = (fortune.exposure_tips || fortune.tips || [

@@ -718,13 +718,14 @@ html, body {
   border: 1px solid rgba(56, 189, 248, 0.3);
 }
 
+.offline-badge,
 .local-badge {
-  color: var(--neon-violet-bright);
-  text-shadow: 0 0 8px rgba(176, 38, 255, 0.5);
+  color: #f59e0b;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
   padding: 0.15rem 0.45rem;
   border-radius: var(--radius-sm);
-  background: rgba(176, 38, 255, 0.1);
-  border: 1px solid rgba(176, 38, 255, 0.25);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
 .card-fortune-section {
