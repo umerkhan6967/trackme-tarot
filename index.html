@@ -96,14 +96,31 @@
 
         <!-- Action Controls -->
         <div class="result-actions">
-          <button id="btn-rescan" class="cyber-btn secondary">
-            <span class="icon">↺</span> RE-READ TELEMETRY
+          <button id="btn-download" class="cyber-btn primary" type="button">
+            <span class="icon">📥</span> DOWNLOAD IMAGE
           </button>
-          <button id="btn-copy" class="cyber-btn primary">
-            <span class="icon">📋</span> COPY PROPHECY
+          <button id="btn-share" class="cyber-btn secondary" type="button">
+            <span class="icon">🔗</span> SHARE
+          </button>
+          <button id="btn-rescan" class="cyber-btn tertiary" type="button">
+            <span class="icon">↺</span> READ AGAIN
           </button>
         </div>
-        <div id="copy-feedback" class="copy-feedback hidden">Prophecy copied to clipboard.</div>
+
+        <!-- Direct Social Shortcuts -->
+        <div class="social-share-bar">
+          <span class="social-label">QUICK SHARE:</span>
+          <a id="share-whatsapp" class="social-chip whatsapp" target="_blank" rel="noopener noreferrer" href="#">
+            <span>💬</span> WhatsApp
+          </a>
+          <a id="share-linkedin" class="social-chip linkedin" target="_blank" rel="noopener noreferrer" href="#">
+            <span>💼</span> LinkedIn
+          </a>
+          <button id="btn-copy-link" class="social-chip copy" type="button">
+            <span>📋</span> Copy Text
+          </button>
+        </div>
+        <div id="copy-feedback" class="copy-feedback hidden">Prophecy copied to clipboard!</div>
       </div>
     </section>
 

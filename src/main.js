@@ -6,7 +6,12 @@
 import { getBrowserFingerprint } from './fingerprint.js';
 import { calculateExposureScore } from './score.js';
 import { generateFortune } from './fortune.js';
-import { renderTarotCard, getShareableText } from './card.js';
+import { 
+  renderTarotCard, 
+  getShareableText, 
+  downloadTarotCardImage, 
+  shareTarotReading 
+} from './card.js';
 
 // DOM References
 const screenLanding = document.getElementById('screen-landing');
@@ -15,7 +20,11 @@ const screenResult = document.getElementById('screen-result');
 
 const btnStart = document.getElementById('btn-start');
 const btnRescan = document.getElementById('btn-rescan');
-const btnCopy = document.getElementById('btn-copy');
+const btnDownload = document.getElementById('btn-download');
+const btnShare = document.getElementById('btn-share');
+const btnCopyLink = document.getElementById('btn-copy-link');
+const shareWhatsapp = document.getElementById('share-whatsapp');
+const shareLinkedin = document.getElementById('share-linkedin');
 const copyFeedback = document.getElementById('copy-feedback');
 
 const terminalBody = document.getElementById('terminal-body');
@@ -26,6 +35,7 @@ const cardContainer = document.getElementById('tarot-card-container');
 
 // State Cache
 let currentReading = null;
+let currentCanvas = null;
 
 /**
  * Screen switcher
@@ -110,9 +120,38 @@ async function startScanningSequence() {
   // Brief pause before transitioning to result for dramatic tension
   await new Promise((res) => setTimeout(res, 450));
 
-  // Render Card and switch screen
-  renderTarotCard(cardContainer, currentReading);
+  // Render 1080x1350 Card Canvas and switch screen
+  currentCanvas = renderTarotCard(cardContainer, currentReading);
+  updateSocialLinks();
   switchScreen(screenResult);
+}
+
+/**
+ * Updates WhatsApp and LinkedIn sharing links with customized copy
+ */
+function updateSocialLinks() {
+  if (!currentReading) return;
+  const text = getShareableText(currentReading.fortune, currentReading.fingerprint, currentReading.score);
+  const url = window.location.origin;
+
+  if (shareWhatsapp) {
+    shareWhatsapp.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+  }
+  if (shareLinkedin) {
+    shareLinkedin.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&summary=${encodeURIComponent(text)}`;
+  }
+}
+
+/**
+ * Flash notification feedback
+ */
+function showFeedback(msg = 'Copied to clipboard!') {
+  if (!copyFeedback) return;
+  copyFeedback.textContent = msg;
+  copyFeedback.classList.remove('hidden');
+  setTimeout(() => {
+    copyFeedback.classList.add('hidden');
+  }, 2500);
 }
 
 /**
@@ -123,25 +162,51 @@ function initApp() {
     startScanningSequence();
   });
 
+  // "Read again" action
   btnRescan?.addEventListener('click', () => {
     switchScreen(screenLanding);
   });
 
-  btnCopy?.addEventListener('click', async () => {
+  // "Download image" action (1080x1350 PNG)
+  btnDownload?.addEventListener('click', () => {
+    if (!currentCanvas || !currentReading) return;
+    const cleanTitle = (currentReading.fortune.archetype || 'tarot')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-');
+    downloadTarotCardImage(currentCanvas, `trackme-tarot-${cleanTitle}.png`);
+    showFeedback('Card image downloaded (1080×1350 HD)!');
+  });
+
+  // "Share" action (Web Share API with fallback to copy link)
+  btnShare?.addEventListener('click', async () => {
+    if (!currentReading) return;
+    const res = await shareTarotReading({
+      fortune: currentReading.fortune,
+      fingerprint: currentReading.fingerprint,
+      score: currentReading.score,
+      canvas: currentCanvas
+    });
+
+    if (res.method === 'clipboard') {
+      showFeedback('Prophecy text copied for sharing!');
+    } else if (res.shared) {
+      showFeedback('Shared successfully!');
+    }
+  });
+
+  // Copy text shortcut
+  btnCopyLink?.addEventListener('click', async () => {
     if (!currentReading) return;
     const text = getShareableText(currentReading.fortune, currentReading.fingerprint, currentReading.score);
     try {
       await navigator.clipboard.writeText(text);
-      copyFeedback.classList.remove('hidden');
-      setTimeout(() => {
-        copyFeedback.classList.add('hidden');
-      }, 2500);
+      showFeedback('Prophecy text copied to clipboard!');
     } catch {
-      alert('Prophecy copied to clipboard!');
+      showFeedback('Text copied!');
     }
   });
 
-  console.log('TrackMe Tarot initialized. Client-side telemetry ready.');
+  console.log('TrackMe Tarot initialized with 1080x1350 Canvas HD renderer.');
 }
 
 // Kick off when DOM is ready
