@@ -370,6 +370,35 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   const badgeLabel = isGemini ? '✦ Written live by Gemini AI' : 'Offline mode';
   const oracleBadgeText = `<span class="${isGemini ? 'ai-badge' : 'offline-badge'}">${badgeLabel}</span>`;
   console.log('source:', fortune.source || (isGemini ? 'gemini' : 'fallback'));
+  if (fortune.model) {
+    console.log('model:', fortune.model);
+  }
+
+  // Requirement 3 & 4: Output debug info when ?debug=1 is present
+  const isDebug = new URLSearchParams(window.location.search).get('debug') === '1';
+  let debugHtml = '';
+  if (isDebug) {
+    debugHtml = `
+      <aside class="debug-panel" aria-label="Debug Telemetry Info" style="margin-top: 1rem; width: 100%; max-width: 520px; padding: 0.85rem 1rem; background: rgba(5, 7, 12, 0.95); border: 1px dashed ${isGemini ? 'var(--neon-green)' : '#f59e0b'}; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem; color: #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.6);">
+        <div style="color: ${isGemini ? 'var(--neon-green)' : '#f59e0b'}; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 0.4rem; display: flex; justify-content: space-between;">
+          <span>&gt; DEBUG CONSOLE (?debug=1)</span>
+          <span style="opacity: 0.8;">HTTP ${fortune.errorStatus || 200}</span>
+        </div>
+        <div>Mode: <strong style="color: ${isGemini ? 'var(--neon-green)' : '#f59e0b'};">${isGemini ? 'Live Gemini AI' : 'Offline Fallback'}</strong></div>
+        <div>Source: <code>${fortune.source}</code></div>
+        ${fortune.model ? `<div>Model: <strong style="color: #38bdf8;">${fortune.model}</strong></div>` : ''}
+        ${fortune.errorMessage ? `<div style="color: #ff4757; margin-top: 0.35rem; line-height: 1.35;">Offline Reason: <code>[${fortune.errorStatus || 503}] ${fortune.errorMessage}</code></div>` : ''}
+        ${fortune.attempts?.length ? `<div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.35rem;">Attempts Tried: ${fortune.attempts.map(a => `${a.model} (att ${a.attempt}: ${a.status || 'err'})`).join(', ')}</div>` : ''}
+      </aside>
+    `;
+    console.log('[DEBUG 1 OUTPUT]', {
+      source: fortune.source,
+      model: fortune.model || null,
+      errorStatus: fortune.errorStatus || null,
+      errorMessage: fortune.errorMessage || null,
+      attempts: fortune.attempts || null
+    });
+  }
 
   // Fix-it cards from exposure tips
   const tipsArray = (fortune.exposure_tips || fortune.tips || [
@@ -413,6 +442,7 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
         <img class="tarot-canvas-img" src="${dataUrl}" alt="TrackMe Tarot Card - ${fortune.archetype || fortune.title}" id="tarot-rendered-image" />
       </div>
     </article>
+    ${debugHtml}
   `;
 
   // 2. Exposure Score & Circular Gauge Section (Right Column)

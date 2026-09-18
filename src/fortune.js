@@ -261,6 +261,7 @@ export async function generateFortune(signals) {
   const payload = signals.signals ? signals.signals : signals;
 
   let fortuneData = null;
+  let apiError = null;
 
   try {
     const controller = new AbortController();
@@ -294,21 +295,44 @@ export async function generateFortune(signals) {
           numeral: 'XII',
           suit: 'SUIT OF CIPHERS',
           isAiGenerated: true,
-          source: data.source || 'gemini'
+          source: data.source || 'gemini',
+          model: data.model || 'gemini-2.5-flash'
         };
       }
+    } else {
+      const errJson = await response.json().catch(() => null);
+      const errMsg = errJson?.error || `HTTP ${response.status}`;
+      console.warn(`⚠️ [/api/fortune] API returned error status ${response.status}:`, errMsg);
+      apiError = {
+        status: response.status,
+        message: errMsg,
+        details: errJson?.details,
+        attempts: errJson?.attempts
+      };
     }
   } catch (err) {
     console.info('⚠️ [/api/fortune] Gemini API unavailable or timed out (>8s). Engaging local cyber-tarot fallback.', err.name === 'AbortError' ? '(Timed out after 8s)' : err.message);
+    apiError = {
+      status: err.name === 'AbortError' ? 408 : 503,
+      message: err.name === 'AbortError' ? 'Request timed out (>8s)' : err.message
+    };
   }
 
   // Fallback if AI was unavailable or invalid
   if (!fortuneData) {
     fortuneData = getLocalFallbackFortune(signals);
+    if (apiError) {
+      fortuneData.errorStatus = apiError.status;
+      fortuneData.errorMessage = apiError.message;
+      fortuneData.attempts = apiError.attempts;
+    }
   }
 
   // Console.log the source as requested
   console.log('source:', fortuneData.source);
+  if (fortuneData.model) {
+    console.log('model:', fortuneData.model);
+  }
 
   // Add backward-compatible aliases so existing components don't break
   return {
