@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from 'vite';
+import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -7,11 +8,26 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173
     },
+    build: {
+      rollupOptions: {
+        input: {
+          main: resolve(__dirname, 'index.html'),
+          teams: resolve(__dirname, 'teams/index.html')
+        }
+      }
+    },
     plugins: [
       {
         name: 'local-api-handler',
         configureServer(server) {
           server.middlewares.use(async (req, res, next) => {
+            if (req.url === '/teams') {
+              res.statusCode = 301;
+              res.setHeader('Location', '/teams/');
+              res.end();
+              return;
+            }
+
             if (req.url === '/api/fortune' && req.method === 'POST') {
               try {
                 // Read request body
