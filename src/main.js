@@ -36,9 +36,10 @@ const cardContainer = document.getElementById('tarot-card-container');
 // State Cache
 let currentReading = null;
 let currentCanvas = null;
+let isScanning = false;
 
 /**
- * Screen switcher
+ * Screen switcher with smooth transition
  */
 function switchScreen(activeScreen) {
   [screenLanding, screenScanning, screenResult].forEach((scr) => {
@@ -51,6 +52,27 @@ function switchScreen(activeScreen) {
     }
   });
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/**
+ * Set loading state on the CTA button
+ */
+function setButtonLoading(loading) {
+  if (!btnStart) return;
+  const textEl = btnStart.querySelector('.btn-text');
+  const subEl = btnStart.querySelector('.btn-subtext');
+
+  if (loading) {
+    btnStart.classList.add('loading');
+    btnStart.setAttribute('aria-busy', 'true');
+    if (textEl) textEl.textContent = '⟳ SCANNING...';
+    if (subEl) subEl.textContent = '> TELEMETRY PROBE ACTIVE';
+  } else {
+    btnStart.classList.remove('loading');
+    btnStart.setAttribute('aria-busy', 'false');
+    if (textEl) textEl.textContent = '⚡ READ MY FORTUNE ⚡';
+    if (subEl) subEl.textContent = '> INITIATE TELEMETRY PROBE';
+  }
 }
 
 /**
@@ -78,52 +100,109 @@ function appendTerminalLine(text, type = 'normal') {
 }
 
 /**
+ * Shows an error state in the terminal with retry button
+ */
+function showTerminalError(errorMsg) {
+  if (!terminalBody) return;
+
+  appendTerminalLine('FATAL: SCAN SEQUENCE ABORTED', 'alert');
+
+  const errorBox = document.createElement('div');
+  errorBox.className = 'terminal-error-box';
+  errorBox.innerHTML = `
+    <span class="error-title">⚠ SYSTEM ERROR</span>
+    <span class="error-msg">${errorMsg}</span>
+    <button class="retry-btn" type="button" aria-label="Retry scanning">↺ RETRY SCAN</button>
+  `;
+
+  terminalBody.appendChild(errorBox);
+  terminalBody.scrollTop = terminalBody.scrollHeight;
+
+  // Wire retry button
+  const retryBtn = errorBox.querySelector('.retry-btn');
+  retryBtn?.addEventListener('click', () => {
+    startScanningSequence();
+  });
+}
+
+/**
  * Executes the 4-second terminal scanning ritual
  */
 async function startScanningSequence() {
+  if (isScanning) return;
+  isScanning = true;
+
+  setButtonLoading(true);
   switchScreen(screenScanning);
+
+  // Set aria-busy on scanning section
+  screenScanning?.setAttribute('aria-busy', 'true');
+
   terminalBody.innerHTML = '';
   scanProgressBar.style.width = '0%';
   scanStepPercent.textContent = '0%';
   scanStepLabel.textContent = 'INITIALIZING SENSORS...';
 
-  // Gather actual browser telemetry and start fortune generation concurrently
-  const fpPromise = getBrowserFingerprint();
-  const fortunePromise = fpPromise.then((fp) => generateFortune(fp));
+  try {
+    // Gather actual browser telemetry and start fortune generation concurrently
+    const fpPromise = getBrowserFingerprint();
+    const fortunePromise = fpPromise.then((fp) => generateFortune(fp));
 
-  // Sequence of realistic and eerie terminal events over ~4.0 seconds (4000ms)
-  const sequence = [
-    { delay: 300, pct: 15, label: 'PROBING RUNTIME', text: 'reading device & hardware concurrency...', type: 'normal' },
-    { delay: 850, pct: 32, label: 'GEO_TEMPORAL LOCK', text: 'reading timezone, locale & system clocks...', type: 'mystic' },
-    { delay: 1400, pct: 50, label: 'CANVAS INTERCEPT', text: 'reading WebGL GPU shaders & render pipeline...', type: 'normal' },
-    { delay: 2000, pct: 68, label: 'VIEWPORT RECON', text: 'reading screen geometry, retina scale & color depth...', type: 'normal' },
-    { delay: 2600, pct: 82, label: 'SUBSYSTEM PROBE', text: 'reading battery levels, touch points & font metrics...', type: 'mystic' },
-    { delay: 3200, pct: 94, label: 'SYNTHESIZING MATRIX', text: 'calculating digital trackability score...', type: 'highlight' },
-    { delay: 3800, pct: 100, label: 'ARCANA MATERIALIZED', text: 'translating signals into cyber-tarot fortune...', type: 'highlight' }
-  ];
+    // Sequence of realistic and eerie terminal events over ~4.0 seconds (4000ms)
+    const sequence = [
+      { delay: 300, pct: 15, label: 'PROBING RUNTIME', text: 'reading device & hardware concurrency...', type: 'normal' },
+      { delay: 850, pct: 32, label: 'GEO_TEMPORAL LOCK', text: 'reading timezone, locale & system clocks...', type: 'mystic' },
+      { delay: 1400, pct: 50, label: 'CANVAS INTERCEPT', text: 'reading WebGL GPU shaders & render pipeline...', type: 'normal' },
+      { delay: 2000, pct: 68, label: 'VIEWPORT RECON', text: 'reading screen geometry, retina scale & color depth...', type: 'normal' },
+      { delay: 2600, pct: 82, label: 'SUBSYSTEM PROBE', text: 'reading battery levels, touch points & font metrics...', type: 'mystic' },
+      { delay: 3200, pct: 94, label: 'SYNTHESIZING MATRIX', text: 'calculating digital trackability score...', type: 'highlight' },
+      { delay: 3800, pct: 100, label: 'ARCANA MATERIALIZED', text: 'translating signals into cyber-tarot fortune...', type: 'highlight' }
+    ];
 
-  for (const step of sequence) {
-    await new Promise((res) => setTimeout(res, step.delay - (sequence[sequence.indexOf(step) - 1]?.delay || 0)));
-    appendTerminalLine(step.text, step.type);
-    scanProgressBar.style.width = `${step.pct}%`;
-    scanStepPercent.textContent = `${step.pct}%`;
-    scanStepLabel.textContent = step.label;
+    for (const step of sequence) {
+      await new Promise((res) => setTimeout(res, step.delay - (sequence[sequence.indexOf(step) - 1]?.delay || 0)));
+      appendTerminalLine(step.text, step.type);
+      scanProgressBar.style.width = `${step.pct}%`;
+      scanStepPercent.textContent = `${step.pct}%`;
+      scanStepLabel.textContent = step.label;
+    }
+
+    // Await fingerprint resolution & fortune
+    const fingerprint = await fpPromise;
+    const score = calculateExposureScore(fingerprint);
+    const fortune = await fortunePromise;
+
+    currentReading = { fingerprint, score, fortune };
+
+    // Brief pause before transitioning to result for dramatic tension
+    await new Promise((res) => setTimeout(res, 450));
+
+    // Clear scanning aria-busy
+    screenScanning?.setAttribute('aria-busy', 'false');
+
+    // Render 1080x1350 Card Canvas and switch screen
+    currentCanvas = renderTarotCard(cardContainer, currentReading);
+    updateSocialLinks();
+
+    // Add card flip animation class
+    cardContainer?.classList.add('card-flip-in');
+
+    switchScreen(screenResult);
+
+    // Trigger gauge pulse after animation completes
+    setTimeout(() => {
+      const gaugeWrapper = document.querySelector('.gauge-svg-wrapper');
+      gaugeWrapper?.classList.add('gauge-pulse');
+    }, 1400);
+
+  } catch (err) {
+    console.error('Scanning sequence error:', err);
+    screenScanning?.setAttribute('aria-busy', 'false');
+    showTerminalError(err.message || 'Unknown error during browser signal collection.');
+  } finally {
+    isScanning = false;
+    setButtonLoading(false);
   }
-
-  // Await fingerprint resolution & fortune
-  const fingerprint = await fpPromise;
-  const score = calculateExposureScore(fingerprint);
-  const fortune = await fortunePromise;
-
-  currentReading = { fingerprint, score, fortune };
-
-  // Brief pause before transitioning to result for dramatic tension
-  await new Promise((res) => setTimeout(res, 450));
-
-  // Render 1080x1350 Card Canvas and switch screen
-  currentCanvas = renderTarotCard(cardContainer, currentReading);
-  updateSocialLinks();
-  switchScreen(screenResult);
 }
 
 /**
@@ -162,8 +241,11 @@ function initApp() {
     startScanningSequence();
   });
 
-  // "Read again" action
+  // "Read again" action — reset flip animation
   btnRescan?.addEventListener('click', () => {
+    cardContainer?.classList.remove('card-flip-in');
+    const gaugeWrapper = document.querySelector('.gauge-svg-wrapper');
+    gaugeWrapper?.classList.remove('gauge-pulse');
     switchScreen(screenLanding);
   });
 

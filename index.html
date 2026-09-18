@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="./src/style.css" />
 </head>
 <body class="crt-overlay">
+  <!-- Skip to main content (accessibility) -->
+  <a href="#app" class="skip-to-content">Skip to main content</a>
   <!-- Scanline effect overlay -->
   <div class="scanlines" aria-hidden="true"></div>
   <div class="vignette" aria-hidden="true"></div>
@@ -20,7 +22,7 @@
   <div class="arcane-circle" aria-hidden="true"></div>
 
   <!-- App Header & Navigation -->
-  <header class="main-nav-bar">
+  <header class="main-nav-bar" role="banner" aria-label="Site navigation">
     <a href="./" class="nav-brand">
       <span class="nav-sigil">◈</span> TRACKME TAROT
     </a>
@@ -32,7 +34,7 @@
   </header>
 
   <!-- Main App Shell -->
-  <main id="app" class="app-container">
+  <main id="app" class="app-container" role="main" aria-label="TrackMe Tarot fortune reader">
     
     <!-- Screen 1: Landing -->
     <section id="screen-landing" class="screen active">
@@ -67,7 +69,7 @@
     </section>
 
     <!-- Screen 2: Scanning Terminal -->
-    <section id="screen-scanning" class="screen hidden">
+    <section id="screen-scanning" class="screen hidden" aria-label="Browser scanning in progress" aria-busy="false">
       <div class="terminal-window">
         <div class="terminal-header">
           <div class="terminal-controls">
@@ -100,7 +102,7 @@
       <div class="result-wrapper">
         <header class="result-header">
           <div class="oracle-badge">&gt; ARCANUM COMPUTED</div>
-          <h2 class="result-heading">YOUR DIGITAL REVELATION</h2>
+          <h2 class="result-heading" aria-live="assertive">YOUR DIGITAL REVELATION</h2>
         </header>
 
         <!-- Tarot Card Container (populated by card.js) -->
@@ -138,7 +140,7 @@
 
   </main>
 
-  <footer class="app-footer">
+  <footer class="app-footer" role="contentinfo" aria-label="Site footer">
     <span>SYSTEM_ID: TRACKME_TAROT // <span class="accent-green">ONLINE</span></span>
     <span class="footer-sep">•</span>
     <a href="./teams/" class="footer-link">TrackMe for Teams (B2B)</a>

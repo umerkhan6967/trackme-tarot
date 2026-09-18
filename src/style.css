@@ -20,7 +20,7 @@
   --neon-violet-glow: 0 0 25px rgba(176, 38, 255, 0.4);
 
   --text-main: #f0f6fc;
-  --text-muted: #8b949e;
+  --text-muted: #9ca3af;
   --text-cyan: #38bdf8;
   --text-alert: #ff4757;
 
@@ -40,6 +40,26 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Skip to content (accessibility) */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background: var(--neon-green);
+  color: #000;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+.skip-to-content:focus {
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 html, body {
@@ -2086,12 +2106,35 @@ html, body {
   }
 
   .terminal-body {
-    height: 250px;
-    font-size: 0.8rem;
+    height: 240px;
+    font-size: 0.78rem;
   }
 
   .result-actions {
     flex-direction: column;
+  }
+
+  .tarot-card-canvas-wrap {
+    max-width: 100%;
+  }
+
+  .exposure-dashboard {
+    max-width: 100%;
+    padding: 1.15rem;
+  }
+
+  .card-preview-header {
+    font-size: 0.6rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .social-share-bar {
+    max-width: 100%;
+    padding: 0.5rem;
+  }
+
+  .result-actions {
+    max-width: 100%;
   }
 
   .teams-container {
@@ -2100,3 +2143,334 @@ html, body {
   }
 }
 
+/* --------------------------------------------------------------------------
+   375px Ultra-Narrow Mobile
+   -------------------------------------------------------------------------- */
+@media (max-width: 375px) {
+  html {
+    font-size: 13.5px;
+  }
+
+  .app-container {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .main-title {
+    font-size: 2rem;
+  }
+
+  .tagline {
+    font-size: 0.92rem;
+  }
+
+  .glow-button {
+    padding: 1rem 1rem;
+    max-width: 100%;
+  }
+
+  .btn-text {
+    font-size: 1rem;
+  }
+
+  .btn-subtext {
+    font-size: 0.62rem;
+  }
+
+  .preview-pills {
+    gap: 0.4rem;
+  }
+
+  .pill {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.55rem;
+  }
+
+  .terminal-body {
+    height: 200px;
+    font-size: 0.72rem;
+    padding: 0.75rem;
+  }
+
+  .terminal-header {
+    font-size: 0.65rem;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .terminal-title {
+    display: none;
+  }
+
+  .tarot-card-container {
+    gap: 1rem;
+  }
+
+  .tarot-card-canvas-wrap,
+  .exposure-dashboard {
+    border-radius: var(--radius-md);
+  }
+
+  .exposure-dashboard {
+    padding: 1rem 0.75rem;
+  }
+
+  .gauge-svg-wrapper {
+    width: 130px;
+    height: 130px;
+  }
+
+  .gauge-number {
+    font-size: 1.8rem;
+  }
+
+  .dashboard-title {
+    font-size: 1rem;
+  }
+
+  .breakdown-label {
+    font-size: 0.72rem;
+  }
+
+  .breakdown-why {
+    font-size: 0.65rem;
+  }
+
+  .fix-it-card {
+    padding: 0.55rem 0.65rem;
+  }
+
+  .fix-it-text {
+    font-size: 0.68rem;
+  }
+
+  .cyber-btn {
+    font-size: 0.7rem;
+    padding: 0.7rem 0.5rem;
+  }
+
+  .social-chip {
+    font-size: 0.65rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .main-nav-bar {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .nav-brand {
+    font-size: 0.85rem;
+  }
+
+  .nav-teams-btn {
+    font-size: 0.65rem;
+    padding: 0.35rem 0.65rem;
+  }
+
+  .result-heading {
+    font-size: 1.1rem;
+  }
+
+  .privacy-note-card {
+    padding: 0.6rem;
+  }
+
+  .privacy-text {
+    font-size: 0.65rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Card Flip Reveal Animation
+   -------------------------------------------------------------------------- */
+@keyframes cardFlipIn {
+  0% {
+    opacity: 0;
+    transform: perspective(1000px) rotateY(90deg) scale(0.85);
+  }
+  60% {
+    opacity: 1;
+    transform: perspective(1000px) rotateY(-8deg) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) rotateY(0deg) scale(1);
+  }
+}
+
+.card-flip-in .tarot-card-canvas-wrap {
+  animation: cardFlipIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.card-flip-in .exposure-dashboard {
+  animation: fadeSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Staggered breakdown items */
+.breakdown-item {
+  animation: fadeSlideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.breakdown-item:nth-child(1) { animation-delay: 0.5s; }
+.breakdown-item:nth-child(2) { animation-delay: 0.6s; }
+.breakdown-item:nth-child(3) { animation-delay: 0.7s; }
+.breakdown-item:nth-child(4) { animation-delay: 0.8s; }
+.breakdown-item:nth-child(5) { animation-delay: 0.9s; }
+.breakdown-item:nth-child(6) { animation-delay: 1.0s; }
+.breakdown-item:nth-child(7) { animation-delay: 1.1s; }
+.breakdown-item:nth-child(8) { animation-delay: 1.2s; }
+
+/* Staggered fix-it cards */
+.fix-it-card {
+  animation: fadeSlideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.fix-it-card:nth-child(1) { animation-delay: 1.3s; }
+.fix-it-card:nth-child(2) { animation-delay: 1.4s; }
+.fix-it-card:nth-child(3) { animation-delay: 1.5s; }
+
+/* Gauge pulse glow after animation completes */
+@keyframes gaugePulse {
+  0%, 100% { filter: drop-shadow(0 0 8px currentColor); }
+  50% { filter: drop-shadow(0 0 18px currentColor) drop-shadow(0 0 30px currentColor); }
+}
+
+.gauge-pulse .gauge-bar-circle {
+  animation: gaugePulse 2s ease-in-out 1.5s 2;
+}
+
+/* --------------------------------------------------------------------------
+   Loading & Error States
+   -------------------------------------------------------------------------- */
+.glow-button.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+  animation: buttonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes buttonPulse {
+  0%, 100% { box-shadow: 0 0 25px rgba(0, 255, 157, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(0, 255, 157, 0.5), 0 0 20px rgba(176, 38, 255, 0.4); }
+}
+
+.terminal-error-box {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 71, 87, 0.08);
+  border: 1px solid rgba(255, 71, 87, 0.35);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.terminal-error-box .error-title {
+  color: #ff4757;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+
+.terminal-error-box .error-msg {
+  color: #fca5a5;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.retry-btn {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+  padding: 0.5rem 1.2rem;
+  background: rgba(255, 71, 87, 0.15);
+  color: #ff4757;
+  border: 1px solid rgba(255, 71, 87, 0.4);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  background: rgba(255, 71, 87, 0.25);
+  border-color: #ff4757;
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   Accessibility: Focus States
+   -------------------------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--neon-green);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.glow-button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+  box-shadow: 0 0 40px rgba(0, 255, 157, 0.55), 0 0 20px rgba(176, 38, 255, 0.5);
+}
+
+.cyber-btn:focus-visible {
+  outline: 2px solid var(--neon-green);
+  outline-offset: 3px;
+}
+
+.social-chip:focus-visible {
+  outline: 2px solid var(--neon-green);
+  outline-offset: 2px;
+}
+
+.nav-brand:focus-visible,
+.nav-teams-btn:focus-visible,
+.footer-link:focus-visible {
+  outline: 2px solid var(--neon-green);
+  outline-offset: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   Reduced Motion: Respect User Preference
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .scanlines {
+    display: none;
+  }
+
+  .arcane-circle {
+    animation: none;
+  }
+
+  .card-flip-in .tarot-card-canvas-wrap,
+  .card-flip-in .exposure-dashboard {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .breakdown-item,
+  .fix-it-card {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
