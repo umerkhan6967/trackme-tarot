@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrackMe Tarot — The Internet Already Knows You</title>
+  <meta name="description" content="Zero login. Instant cyber-divination. What does your browser whisper to every server on Earth?" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body class="crt-overlay">
+  <!-- Scanline effect overlay -->
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <!-- Background decorative particles & occult cyber grid -->
+  <div class="cyber-grid" aria-hidden="true"></div>
+  <div class="arcane-circle" aria-hidden="true"></div>
+
+  <!-- Main App Shell -->
+  <main id="app" class="app-container">
+    
+    <!-- Screen 1: Landing -->
+    <section id="screen-landing" class="screen active">
+      <div class="landing-content">
+        <div class="cyber-sigil">
+          <span class="sigil-symbol">◈ 🜂 🜄 ◈</span>
+          <span class="sigil-meta">ZERO_LOGIN_TELEMETRY // V0.1</span>
+        </div>
+
+        <h1 class="main-title">
+          <span class="title-glitch" data-text="TrackMe Tarot">TrackMe Tarot</span>
+        </h1>
+
+        <p class="tagline">The internet already knows you. Let's see how much.</p>
+
+        <div class="preview-pills">
+          <span class="pill"><span class="pill-dot"></span> NO COOKIES NEEDED</span>
+          <span class="pill"><span class="pill-dot"></span> INSTANT BROWSER DIVINATION</span>
+          <span class="pill"><span class="pill-dot"></span> 100% CLIENT SIDE</span>
+        </div>
+
+        <button id="btn-start" class="glow-button" type="button" aria-label="Read my fortune">
+          <span class="btn-border-glow"></span>
+          <span class="btn-text">⚡ READ MY FORTUNE ⚡</span>
+          <span class="btn-subtext">&gt; INITIATE TELEMETRY PROBE</span>
+        </button>
+
+        <div class="disclaimer-note">
+          <p>Readings are generated purely from live passive browser fingerprint signals.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 2: Scanning Terminal -->
+    <section id="screen-scanning" class="screen hidden">
+      <div class="terminal-window">
+        <div class="terminal-header">
+          <div class="terminal-controls">
+            <span class="control-dot red"></span>
+            <span class="control-dot yellow"></span>
+            <span class="control-dot green"></span>
+          </div>
+          <div class="terminal-title">TERMINAL // OMNISCIENT_PROBE.SH</div>
+          <div class="terminal-status"><span class="pulse-indicator"></span> LIVE RECON</div>
+        </div>
+
+        <div class="terminal-body" id="terminal-body" aria-live="polite">
+          <!-- Terminal lines dynamically injected -->
+        </div>
+
+        <div class="terminal-progress-container">
+          <div class="progress-info">
+            <span id="scan-step-label">INITIALIZING SENSORS...</span>
+            <span id="scan-step-percent">0%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div id="scan-progress-bar" class="progress-bar-fill"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 3: Tarot Result -->
+    <section id="screen-result" class="screen hidden">
+      <div class="result-wrapper">
+        <header class="result-header">
+          <div class="oracle-badge">&gt; ARCANUM COMPUTED</div>
+          <h2 class="result-heading">YOUR DIGITAL REVELATION</h2>
+        </header>
+
+        <!-- Tarot Card Container (populated by card.js) -->
+        <div id="tarot-card-container" class="tarot-card-container"></div>
+
+        <!-- Action Controls -->
+        <div class="result-actions">
+          <button id="btn-rescan" class="cyber-btn secondary">
+            <span class="icon">↺</span> RE-READ TELEMETRY
+          </button>
+          <button id="btn-copy" class="cyber-btn primary">
+            <span class="icon">📋</span> COPY PROPHECY
+          </button>
+        </div>
+        <div id="copy-feedback" class="copy-feedback hidden">Prophecy copied to clipboard.</div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <span>SYSTEM_ID: TRACKME_TAROT // <span class="accent-green">READY</span></span>
+  </footer>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
