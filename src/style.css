@@ -807,6 +807,295 @@ html, body {
   pointer-events: none;
 }
 
+/* --------------------------------------------------------------------------
+   Exposure Score Dashboard & Animated Gauge
+   -------------------------------------------------------------------------- */
+.exposure-dashboard {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-neon-violet);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+}
+
+.dashboard-header {
+  text-align: center;
+}
+
+.dashboard-tag {
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  color: var(--neon-green);
+  display: inline-block;
+  margin-bottom: 0.25rem;
+}
+
+.dashboard-title {
+  font-family: var(--font-mystic);
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+  color: #fff;
+}
+
+/* Circular Gauge */
+.gauge-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.gauge-svg-wrapper {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.gauge-svg {
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.gauge-bg-circle {
+  stroke: rgba(255, 255, 255, 0.08);
+}
+
+.gauge-bar-circle {
+  transition: stroke-dashoffset 0.1s linear;
+}
+
+.gauge-bar-circle.low {
+  stroke: #00ff9d;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 157, 0.6));
+}
+
+.gauge-bar-circle.medium {
+  stroke: #38bdf8;
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6));
+}
+
+.gauge-bar-circle.high {
+  stroke: #f59e0b;
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+}
+
+.gauge-bar-circle.very-high {
+  stroke: #ff4757;
+  filter: drop-shadow(0 0 10px rgba(255, 71, 87, 0.7));
+}
+
+.gauge-center-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.gauge-score-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 0.15rem;
+}
+
+.gauge-number {
+  font-family: var(--font-mystic);
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+}
+
+.gauge-max {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.gauge-level-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  margin-top: 0.35rem;
+  text-transform: uppercase;
+}
+
+.gauge-level-badge.level-low {
+  background: rgba(0, 255, 157, 0.15);
+  color: #00ff9d;
+  border: 1px solid rgba(0, 255, 157, 0.4);
+}
+
+.gauge-level-badge.level-medium {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.gauge-level-badge.level-high {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.gauge-level-badge.level-very-high {
+  background: rgba(255, 71, 87, 0.18);
+  color: #ff4757;
+  border: 1px solid rgba(255, 71, 87, 0.5);
+}
+
+/* Why This Score */
+.why-score-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1rem;
+}
+
+.why-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--neon-violet-bright);
+}
+
+.breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.breakdown-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.7rem;
+}
+
+.breakdown-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.2rem;
+}
+
+.breakdown-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #f0f6fc;
+}
+
+.breakdown-points {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--neon-green);
+  background: rgba(0, 255, 157, 0.1);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.breakdown-why {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Fix It Cards */
+.fix-it-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1rem;
+}
+
+.fix-it-heading {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--neon-green);
+}
+
+.fix-it-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.fix-it-card {
+  background: linear-gradient(135deg, rgba(0, 255, 157, 0.05), rgba(176, 38, 255, 0.05));
+  border: 1px solid rgba(0, 255, 157, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.85rem;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.fix-it-card:hover {
+  transform: translateX(3px);
+  border-color: var(--neon-green);
+}
+
+.fix-it-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.fix-it-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--neon-green);
+}
+
+.fix-it-icon {
+  font-size: 0.85rem;
+}
+
+.fix-it-text {
+  font-size: 0.76rem;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+/* Privacy Guarantee Note */
+.privacy-note-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+}
+
+.privacy-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.privacy-text {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
 /* App Footer */
 .app-footer {
   position: relative;

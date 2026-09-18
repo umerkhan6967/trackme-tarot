@@ -4,7 +4,7 @@
  */
 
 import { getBrowserFingerprint } from './fingerprint.js';
-import { calculateTrackabilityScore } from './score.js';
+import { calculateExposureScore } from './score.js';
 import { generateFortune } from './fortune.js';
 import { renderTarotCard, getShareableText } from './card.js';
 
@@ -102,7 +102,7 @@ async function startScanningSequence() {
 
   // Await fingerprint resolution & fortune
   const fingerprint = await fpPromise;
-  const score = calculateTrackabilityScore(fingerprint);
+  const score = calculateExposureScore(fingerprint);
   const fortune = await fortunePromise;
 
   currentReading = { fingerprint, score, fortune };
