@@ -645,9 +645,36 @@ html, body {
 }
 
 /* Card Reading / Fortune Paragraph */
+.card-oracle-origin {
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+
+.ai-badge {
+  color: #38bdf8;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm);
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.local-badge {
+  color: var(--neon-violet-bright);
+  text-shadow: 0 0 8px rgba(176, 38, 255, 0.5);
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm);
+  background: rgba(176, 38, 255, 0.1);
+  border: 1px solid rgba(176, 38, 255, 0.25);
+}
+
 .card-fortune-section {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
 }
 
 .fortune-quote {
@@ -660,12 +687,64 @@ html, body {
   border-left: 2px solid var(--neon-violet);
 }
 
-.fortune-warning {
-  margin-top: 0.75rem;
-  font-size: 0.75rem;
+.prediction-box {
+  background: rgba(176, 38, 255, 0.08);
+  border: 1px dashed var(--border-neon-violet);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.75rem;
+}
+
+.prediction-title {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--neon-violet-bright);
+  letter-spacing: 0.08em;
+  margin-bottom: 0.25rem;
+}
+
+.prediction-text {
+  font-size: 0.8rem;
+  color: #fff;
+  line-height: 1.45;
+}
+
+.tips-box {
+  background: rgba(0, 255, 157, 0.04);
+  border: 1px solid rgba(0, 255, 157, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.75rem;
+}
+
+.tips-title {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
   color: var(--neon-green);
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+
+.tips-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.tips-list li {
+  font-size: 0.76rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.tip-marker {
+  color: var(--neon-green);
+  font-size: 0.75rem;
+  flex-shrink: 0;
 }
 
 /* Result Screen Action Buttons */

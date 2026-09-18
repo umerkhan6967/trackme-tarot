@@ -77,8 +77,9 @@ async function startScanningSequence() {
   scanStepPercent.textContent = '0%';
   scanStepLabel.textContent = 'INITIALIZING SENSORS...';
 
-  // Gather actual browser telemetry concurrently
+  // Gather actual browser telemetry and start fortune generation concurrently
   const fpPromise = getBrowserFingerprint();
+  const fortunePromise = fpPromise.then((fp) => generateFortune(fp));
 
   // Sequence of realistic and eerie terminal events over ~4.0 seconds (4000ms)
   const sequence = [
@@ -99,10 +100,10 @@ async function startScanningSequence() {
     scanStepLabel.textContent = step.label;
   }
 
-  // Await fingerprint resolution
+  // Await fingerprint resolution & fortune
   const fingerprint = await fpPromise;
   const score = calculateTrackabilityScore(fingerprint);
-  const fortune = generateFortune(fingerprint);
+  const fortune = await fortunePromise;
 
   currentReading = { fingerprint, score, fortune };
 
