@@ -257,8 +257,13 @@ function getLocalFallbackFortune(signals) {
  * Seamlessly falls back to the handcrafted local generator on timeout/error.
  */
 export async function generateFortune(signals) {
-  // Normalize signals for the API
-  const payload = signals.signals ? signals.signals : signals;
+  // Normalize signals for the API and guarantee fingerprint hash is never sent to any server
+  const rawPayload = signals.signals ? signals.signals : signals;
+  const payload = { ...rawPayload };
+  delete payload.fingerprintHash;
+  delete payload.fingerprintHashInfo;
+  delete payload.registry;
+  delete payload.audioSample;
 
   let fortuneData = null;
   let apiError = null;

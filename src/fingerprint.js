@@ -438,30 +438,319 @@ export async function testCollectSignals() {
 }
 
 /**
+ * Reads unmasked vendor and renderer from WEBGL_debug_renderer_info extension.
+ * If the browser masks it or returns a generic value, returns "hidden by your browser".
+ */
+export function readGpuDetails() {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) {
+      return {
+        vendor: null,
+        renderer: null,
+        rawRenderer: null,
+        display: 'hidden by your browser',
+        isMasked: true,
+        status: 'unavailable',
+        source: 'WEBGL_debug_renderer_info (WebGL)',
+        note: 'WebGL context unsupported or disabled'
+      };
+    }
+
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    if (!debugInfo) {
+      return {
+        vendor: null,
+        renderer: null,
+        rawRenderer: null,
+        display: 'hidden by your browser',
+        isMasked: true,
+        status: 'unavailable',
+        source: 'WEBGL_debug_renderer_info (WebGL)',
+        note: 'WEBGL_debug_renderer_info extension blocked or masked by browser privacy protection'
+      };
+    }
+
+    const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+    const rawRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+
+    if (!rawRenderer || typeof rawRenderer !== 'string' || !rawRenderer.trim()) {
+      return {
+        vendor: vendor || null,
+        renderer: null,
+        rawRenderer: null,
+        display: 'hidden by your browser',
+        isMasked: true,
+        status: 'unavailable',
+        source: 'WEBGL_debug_renderer_info (WebGL)',
+        note: 'Empty renderer returned by WebGL context'
+      };
+    }
+
+    const trimmed = rawRenderer.trim();
+
+    // Check for generic or masked driver names
+    const genericPatterns = [
+      /^generic$/i,
+      /^generic display adapter$/i,
+      /^integrated shader$/i,
+      /^webgl$/i,
+      /^webkit webgl$/i,
+      /^mozilla$/i,
+      /^google swiftshader$/i,
+      /^software rasterizer$/i,
+      /^mesa offscreen/i,
+      /^microsoft basic render driver$/i
+    ];
+
+    const isGeneric = genericPatterns.some((p) => p.test(trimmed)) ||
+      (vendor && /^generic$/i.test(vendor.trim()));
+
+    if (isGeneric) {
+      return {
+        vendor: vendor || null,
+        renderer: trimmed,
+        rawRenderer: trimmed,
+        display: 'hidden by your browser',
+        isMasked: true,
+        status: 'unavailable',
+        source: 'WEBGL_debug_renderer_info (WebGL)',
+        note: 'Generic renderer reported — masked by browser privacy protection'
+      };
+    }
+
+    const cleanName = cleanGpuName(trimmed);
+    return {
+      vendor: vendor || null,
+      renderer: cleanName,
+      rawRenderer: trimmed,
+      display: cleanName,
+      isMasked: false,
+      status: 'read',
+      source: 'WEBGL_debug_renderer_info (WebGL)',
+      note: `Unmasked GPU hardware details: ${cleanName}`
+    };
+  } catch (err) {
+    return {
+      vendor: null,
+      renderer: null,
+      rawRenderer: null,
+      display: 'hidden by your browser',
+      isMasked: true,
+      status: 'unavailable',
+      source: 'WEBGL_debug_renderer_info (WebGL)',
+      note: `Exception probing WebGL: ${err.message}`
+    };
+  }
+}
+
+/**
+ * Combines canvas output, an OfflineAudioContext audio sample, and the WebGL renderer
+ * into one short hash (first 12 characters of SHA-256 via crypto.subtle).
+ * 100% client-side computation — nothing is sent to any server.
+ */
+export async function generateFingerprintHash(canvasData, webglRenderer) {
+  try {
+    // 1. Audio sample via OfflineAudioContext
+    let audioSample = 'audio_unavailable';
+    try {
+      const AudioContextClass = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      if (AudioContextClass) {
+        const context = new AudioContextClass(1, 44100, 44100);
+        const oscillator = context.createOscillator();
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(10000, context.currentTime);
+
+        const compressor = context.createDynamicsCompressor();
+        compressor.threshold.setValueAtTime(-50, context.currentTime);
+        compressor.knee.setValueAtTime(40, context.currentTime);
+        compressor.ratio.setValueAtTime(12, context.currentTime);
+        compressor.reduction.setValueAtTime(-20, context.currentTime);
+        compressor.attack.setValueAtTime(0, context.currentTime);
+        compressor.release.setValueAtTime(0.25, context.currentTime);
+
+        oscillator.connect(compressor);
+        compressor.connect(context.destination);
+
+        oscillator.start(0);
+        const renderedBuffer = await context.startRendering();
+        const channelData = renderedBuffer.getChannelData(0);
+
+        let sum = 0;
+        for (let i = 4500; i < 5000; i++) {
+          sum += Math.abs(channelData[i]);
+        }
+        audioSample = sum.toFixed(10);
+      }
+    } catch {
+      audioSample = 'audio_unavailable';
+    }
+
+    // 2. Canvas output
+    const canvasStr = canvasData || 'canvas_unavailable';
+
+    // 3. WebGL renderer
+    const rendererStr = webglRenderer || 'renderer_unavailable';
+
+    // 4. Combine into single composite string
+    const composite = `canvas:${canvasStr}|audio:${audioSample}|gl:${rendererStr}`;
+
+    // 5. First 12 characters of SHA-256 via crypto.subtle
+    let hash12 = '';
+    if (typeof window !== 'undefined' && window.crypto?.subtle?.digest) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(composite);
+      const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+      hash12 = hex.slice(0, 12);
+    } else {
+      hash12 = shortHash(composite) + shortHash(composite.split('').reverse().join('')).slice(0, 4);
+    }
+
+    return {
+      hash: hash12,
+      audioSample,
+      status: 'read',
+      source: 'Canvas + OfflineAudioContext + WebGL -> SHA-256 (crypto.subtle)',
+      note: 'First 12 chars of SHA-256 combining canvas output, OfflineAudioContext audio sample, and WebGL renderer string'
+    };
+  } catch (err) {
+    return {
+      hash: 'unavailable',
+      audioSample: null,
+      status: 'unavailable',
+      source: 'Canvas + OfflineAudioContext + WebGL -> SHA-256 (crypto.subtle)',
+      note: `Fingerprint hash computation error: ${err.message}`
+    };
+  }
+}
+
+/**
+ * Builds the comprehensive Signals Registry where each signal is registered with:
+ * (value, status: "read" | "approximate" | "unavailable", source, note).
+ * Never guesses a missing value.
+ */
+export function buildSignalsRegistry(signals, gpuInfo, fpHashInfo) {
+  return {
+    gpu: {
+      value: gpuInfo.isMasked ? null : gpuInfo.display,
+      status: gpuInfo.status,
+      source: gpuInfo.source,
+      note: gpuInfo.note
+    },
+    fingerprintHash: {
+      value: fpHashInfo.hash !== 'unavailable' ? fpHashInfo.hash : null,
+      status: fpHashInfo.status,
+      source: fpHashInfo.source,
+      note: fpHashInfo.note
+    },
+    os: {
+      value: signals.os !== 'unknown' ? signals.os : null,
+      status: signals.os !== 'unknown' ? 'read' : 'unavailable',
+      source: 'navigator.userAgentData / userAgent',
+      note: 'Operating system platform'
+    },
+    browser: {
+      value: signals.browser?.name !== 'unknown' ? `${signals.browser?.name} ${signals.browser?.version}` : null,
+      status: signals.browser?.name !== 'unknown' ? 'read' : 'unavailable',
+      source: 'navigator.userAgentData / userAgent',
+      note: 'Browser brand and version'
+    },
+    screen: {
+      value: signals.screen?.resolution !== 'unknown' ? signals.screen.resolution : null,
+      status: signals.screen?.resolution !== 'unknown' ? 'read' : 'unavailable',
+      source: 'window.screen (width x height)',
+      note: 'Display screen geometry and pixel ratio'
+    },
+    timezone: {
+      value: signals.temporal?.timezone !== 'unknown' ? signals.temporal.timezone : null,
+      status: signals.temporal?.timezone !== 'unknown' ? 'read' : 'unavailable',
+      source: 'Intl.DateTimeFormat().resolvedOptions().timeZone',
+      note: 'Resolved system geographical timezone'
+    },
+    hardware: {
+      value: signals.hardware?.cores !== 'unknown' ? { cores: signals.hardware.cores, memory: signals.hardware.deviceMemory } : null,
+      status: signals.hardware?.cores !== 'unknown' ? 'read' : 'unavailable',
+      source: 'navigator.hardwareConcurrency & navigator.deviceMemory',
+      note: 'Reported logical CPU cores and approximate device memory'
+    },
+    battery: {
+      value: (signals.battery && signals.battery !== 'unsupported' && signals.battery !== 'unknown') ? signals.battery : null,
+      status: (signals.battery && signals.battery !== 'unsupported' && signals.battery !== 'unknown') ? 'read' : 'unavailable',
+      source: 'navigator.getBattery()',
+      note: signals.battery === 'unsupported' ? 'Battery API unsupported or blocked by browser' : 'Battery level and charging telemetry'
+    },
+    connection: {
+      value: (signals.connection && signals.connection !== 'unsupported' && signals.connection !== 'unknown') ? signals.connection : null,
+      status: (signals.connection && signals.connection !== 'unsupported' && signals.connection !== 'unknown') ? 'read' : 'unavailable',
+      source: 'navigator.connection (Network Information API)',
+      note: signals.connection === 'unsupported' ? 'Network Information API unavailable' : 'Effective network type and bandwidth downlink'
+    },
+    canvas: {
+      value: signals.canvasHash !== 'unknown' ? signals.canvasHash : null,
+      status: signals.canvasHash !== 'unknown' ? 'read' : 'unavailable',
+      source: 'HTML5 2D Canvas rendering context',
+      note: 'Sub-pixel 2D canvas text and shape rendering signature'
+    },
+    fonts: {
+      value: signals.fonts?.installedCount !== undefined ? signals.fonts.installedCount : null,
+      status: signals.fonts?.installedCount !== undefined ? 'approximate' : 'unavailable',
+      source: 'CSS font fallback width probing',
+      note: 'Detected installed system font metrics'
+    },
+    privacy: {
+      value: signals.privacy?.adBlockerDetected !== 'unknown' ? signals.privacy : null,
+      status: signals.privacy?.adBlockerDetected !== 'unknown' ? 'read' : 'unavailable',
+      source: 'DOM ad-element probe & navigator.doNotTrack',
+      note: 'Ad blocker detection and Do-Not-Track headers'
+    }
+  };
+}
+
+/**
  * Backward-compatible helper used by main.js, score.js, card.js, and fortune.js
  */
 export async function getBrowserFingerprint() {
   const signals = await collectSignals();
 
-  // Passive GPU renderer lookup for rich card display
-  let gpuRenderer = 'Generic Display Adapter';
-  let gpuVendor = 'Generic';
+  // 1. GPU: Read WEBGL_debug_renderer_info (unmasked vendor and renderer)
+  const gpuInfo = readGpuDetails();
+
+  // 2. Get Canvas data for combined fingerprint hash
+  let canvasDataUrl = '';
   try {
     const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (gl) {
-      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-      if (debugInfo) {
-        gpuVendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || 'Generic';
-        gpuRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'Integrated Shader';
-      }
+    canvas.width = 160;
+    canvas.height = 40;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.textBaseline = 'top';
+      ctx.font = '14px Arial';
+      ctx.fillStyle = '#f60';
+      ctx.fillRect(10, 5, 50, 20);
+      ctx.fillStyle = '#069';
+      ctx.fillText('TrackMe🔮Tarot', 2, 15);
+      canvasDataUrl = canvas.toDataURL();
     }
-  } catch {
-    gpuRenderer = 'Shielded GPU Pipeline';
-  }
+  } catch {}
+
+  // 3. FINGERPRINT HASH: Combine canvas, OfflineAudioContext sample, and WebGL renderer
+  const fpHashInfo = await generateFingerprintHash(canvasDataUrl, gpuInfo.rawRenderer || gpuInfo.renderer);
+
+  // 4. Signals Registry with (value, status: "read" | "approximate" | "unavailable", source, note)
+  const registry = buildSignalsRegistry(signals, gpuInfo, fpHashInfo);
 
   return {
     signals,
+    registry,
+    gpu: gpuInfo,
+    gpuRenderer: gpuInfo.display,
+    gpuVendor: gpuInfo.vendor,
+    isGpuMasked: gpuInfo.isMasked,
+    fingerprintHash: fpHashInfo.hash,
+    fingerprintHashInfo: fpHashInfo,
     deviceType: signals.deviceType,
     platform: signals.os,
     os: signals.os,
@@ -476,8 +765,6 @@ export async function getBrowserFingerprint() {
     colorDepth: signals.screen.colorDepth,
     pixelRatio: signals.screen.pixelRatio,
     viewport: signals.screen.viewport,
-    gpuRenderer: cleanGpuName(gpuRenderer),
-    gpuVendor,
     batteryStatus: signals.battery !== 'unsupported' ? signals.battery : null,
     connectionType: signals.connection !== 'unsupported' ? signals.connection.effectiveType : 'broadband',
     doNotTrack: signals.privacy.doNotTrack === true,
@@ -490,12 +777,16 @@ export async function getBrowserFingerprint() {
 }
 
 function cleanGpuName(raw) {
-  if (!raw) return 'Unknown GPU';
-  if (raw.includes('ANGLE (')) {
-    const match = raw.match(/ANGLE \((.*?), (.*?),/);
-    if (match && match[2]) return match[2].trim();
+  if (!raw) return 'hidden by your browser';
+  let clean = raw;
+  if (clean.includes('ANGLE (')) {
+    const match = clean.match(/ANGLE \((.*?), (.*?),/);
+    if (match && match[2]) {
+      clean = match[2].trim();
+    }
   }
-  return raw.replace(/Direct3D.*?vs_\d+_\d+/, '').trim().slice(0, 32);
+  clean = clean.replace(/Direct3D.*?vs_\d+_\d+.*$/, '').trim();
+  return clean || raw.slice(0, 32);
 }
 
 // Auto-run unit test on module load in dev

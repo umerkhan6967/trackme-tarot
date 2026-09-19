@@ -374,6 +374,16 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
     console.log('model:', fortune.model);
   }
 
+  // Feature 1 & 2 variables
+  const gpuInfo = fingerprint.gpu || { display: fingerprint.gpuRenderer || 'hidden by your browser', isMasked: false };
+  const gpuDisplay = gpuInfo.display || 'hidden by your browser';
+  const isGpuMasked = gpuDisplay === 'hidden by your browser' || Boolean(gpuInfo.isMasked);
+  const fpHash = fingerprint.fingerprintHash || 'unavailable';
+
+  if (fingerprint.registry) {
+    console.log('[SIGNALS REGISTRY]', fingerprint.registry);
+  }
+
   // Requirement 3 & 4: Output debug info when ?debug=1 is present
   const isDebug = new URLSearchParams(window.location.search).get('debug') === '1';
   let debugHtml = '';
@@ -476,6 +486,39 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
             </div>
             <span class="gauge-level-badge level-${levelClass}">${score.level}</span>
           </div>
+        </div>
+      </div>
+
+      <!-- Hardware & Fingerprint Telemetry Cards (Feature 1 & Feature 2) -->
+      <div class="telemetry-cards-container">
+        <!-- Feature 1: Your graphics card -->
+        <div class="telemetry-card gpu-card" aria-label="Your graphics card">
+          <div class="telemetry-card-header">
+            <span class="telemetry-card-badge">WEBGL TELEMETRY</span>
+            <span class="telemetry-card-icon">🎮</span>
+          </div>
+          <h4 class="telemetry-card-title">Your graphics card</h4>
+          <div class="telemetry-card-value ${isGpuMasked ? 'is-masked' : ''}">
+            ${gpuDisplay}
+          </div>
+          <p class="telemetry-card-sub">
+            ${isGpuMasked ? 'Unmasked vendor & renderer hidden by your browser privacy protections.' : (fingerprint.gpuVendor ? `Vendor: ${fingerprint.gpuVendor}` : 'Extracted via WEBGL_debug_renderer_info')}
+          </p>
+        </div>
+
+        <!-- Feature 2: Fingerprint Hash -->
+        <div class="telemetry-card fp-hash-card" aria-label="Fingerprint Hash">
+          <div class="telemetry-card-header">
+            <span class="telemetry-card-badge">PERSISTENT HASH</span>
+            <span class="telemetry-card-icon">🧬</span>
+          </div>
+          <h4 class="telemetry-card-title">Identity Signature</h4>
+          <p class="fp-card-statement">
+            Your fingerprint: <strong class="fp-hash-val">${fpHash}</strong>. Open this page in a private window. If the hash is the same, incognito didn't hide you.
+          </p>
+          <p class="telemetry-card-sub">
+            Combined from Canvas 2D + OfflineAudioContext + WebGL. Nothing is sent to any server.
+          </p>
         </div>
       </div>
 
