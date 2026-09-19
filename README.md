@@ -57,7 +57,7 @@ It's privacy awareness that people actually finish — because it's fun, slightl
 
 - **Frontend**: Vanilla JavaScript (ES Modules), HTML5, CSS3
 - **Build Tool**: [Vite](https://vitejs.dev/)
-- **AI**: [Google Gemini API](https://ai.google.dev/) (1.5 Flash)
+- **AI**: [Google Gemini API](https://ai.google.dev/) (2.5 Flash)
 - **Canvas**: HTML5 Canvas API for HD card generation
 - **Deployment**: Vercel (serverless functions for API) + GitHub Pages (static fallback)
 - **Fonts**: JetBrains Mono + Cinzel (Google Fonts)
@@ -97,10 +97,16 @@ GEMINI_API_KEY=your_gemini_api_key_here
 ### 4. Run Development Server
 
 ```bash
+# Real AI mode (Gemini API serverless backend + frontend)
+npm run dev:full
+
+# Front-end only (offline mode)
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+> **Note:** Use `npm run dev:full` for the real AI, `npm run dev` for front-end only (offline mode).
+
+Open [http://localhost:3000](http://localhost:3000) (for `dev:full`) or [http://localhost:5173](http://localhost:5173) (for `dev`) in your browser.
 
 ### 5. Build for Production
 

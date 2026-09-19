@@ -3,7 +3,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "routes": [
-    { "src": "/api/fortune", "dest": "/api/fortune.js" }
+  "rewrites": [
+    { "source": "/api/fortune", "destination": "/api/fortune.js" }
   ]
 }
