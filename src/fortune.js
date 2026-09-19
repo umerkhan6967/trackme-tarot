@@ -436,10 +436,15 @@ export async function generateFortune(signals, score = { score: 50 }, theme = 'D
   delete payload.registry;
   delete payload.audioSample;
 
+  const badge = rawPayload.badge || null;
+  const rareCards = Array.isArray(rawPayload.rareCards) ? rawPayload.rareCards : [];
+
   const requestBody = {
     signals: payload,
     score: score,
-    theme: theme
+    theme: theme,
+    badge,
+    rareCards
   };
 
   let fortuneData = null;
@@ -525,7 +530,9 @@ export async function generateFortune(signals, score = { score: 50 }, theme = 'D
     vibe_emoji: fortuneData.cards[0]?.vibe_emoji || '🔮',
     warning: `🔮 Oracle Prediction: ${fortuneData.prediction}`,
     tips: fortuneData.exposure_tips,
-    theme: fortuneData.theme || theme
+    theme: fortuneData.theme || theme,
+    badge: fortuneData.badge || badge,
+    rareCards: fortuneData.rareCards || rareCards
   };
 }
 

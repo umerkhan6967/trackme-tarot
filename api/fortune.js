@@ -65,6 +65,11 @@ function extractAllowedNumbers(signals, score) {
   addMatches(signals.connection?.downlink);
   addMatches(signals.connection?.rtt);
 
+  if (signals.badge?.rule) addMatches(signals.badge.rule);
+  if (Array.isArray(signals.rareCards)) {
+    signals.rareCards.forEach(r => addMatches(r.rule));
+  }
+
   return allowed;
 }
 
@@ -298,7 +303,11 @@ export default async function handler(req, res) {
   const signals = body.signals || body;
   const score = body.score || { score: 50 };
   const theme = body.theme || 'Destiny & device memory';
-  const allowedNumbers = extractAllowedNumbers(signals, score);
+  const badge = body.badge || signals.badge || null;
+  const rareCards = Array.isArray(body.rareCards) ? body.rareCards : (Array.isArray(signals.rareCards) ? signals.rareCards : []);
+
+  // Pass badge & rareCards to allowed numbers extraction
+  const allowedNumbers = extractAllowedNumbers({ ...signals, badge, rareCards }, score);
 
   // Handle direct prompt testing
   const isTestPrompt = typeof body.prompt === 'string' && body.prompt.trim().length > 0;
@@ -307,6 +316,8 @@ export default async function handler(req, res) {
   if (!apiKey) {
     console.warn('GEMINI_API_KEY missing. Using 3-card local fallback.');
     const fallbackFortune = generateLocal3CardFortune(signals, score, theme);
+    fallbackFortune.badge = badge;
+    fallbackFortune.rareCards = rareCards;
     return res.status(200).json(fallbackFortune);
   }
 
@@ -397,7 +408,7 @@ Here are the visitor's verified passive browser facts:
 - Do Not Track: ${signals.privacy?.doNotTrack || signals.doNotTrack || 'unavailable'}
 - Global Privacy Control: ${signals.privacy?.globalPrivacyControl || signals.gpc || 'unavailable'}
 - Network Latency: ${signals.network?.latencyDisplay || signals.latencyDisplay || 'local test'}
-
+${badge && badge.name ? `- Identity Badge: ${badge.name} (${badge.rule})\n` : ''}${rareCards.length ? `- Rare Card Discovered: ${rareCards.map(r => `${r.title} [rare card]: ${r.rule}`).join('; ')}\n` : ''}
 Generate their 3-card spread in valid JSON format:`;
 
     // Attempt generation with retry on validation failure (max 2 attempts per model)
@@ -435,6 +446,8 @@ Generate their 3-card spread in valid JSON format:`;
         parsed.source = 'gemini';
         parsed.model = model;
         parsed.theme = theme;
+        parsed.badge = badge;
+        parsed.rareCards = rareCards;
 
         // Backward compatibility
         if (parsed.cards && parsed.cards[0]) {
@@ -460,6 +473,8 @@ Generate their 3-card spread in valid JSON format:`;
   // Fallback to handcrafted 3-card generator if all models or validation failed
   console.info('Falling back to local 3-card spread generator. Reason:', lastErrorText);
   const fallback = generateLocal3CardFortune(signals, score, theme);
+  fallback.badge = badge;
+  fallback.rareCards = rareCards;
   fallback.errorStatus = lastStatus;
   fallback.errorMessage = lastErrorText;
   return res.status(200).json(fallback);

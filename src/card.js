@@ -152,9 +152,14 @@ export function generateTarotCardCanvas({ fortune, fingerprint, score }) {
   ctx.letterSpacing = '2.5px';
   ctx.fillText('◈ TRACKMETAROT // THREE-CARD DIVINATION ◈', 540, 76);
 
+  const badgeObj = fortune.badge || fingerprint.badge;
+  const rareArr = Array.isArray(fortune.rareCards) ? fortune.rareCards : (Array.isArray(fingerprint.rareCards) ? fingerprint.rareCards : []);
+
   ctx.fillStyle = '#00ff9d';
-  ctx.font = '700 20px "Cinzel", serif, monospace';
-  const themeHeader = `THEME: ${(fortune.theme || 'Destiny & device memory').toUpperCase()}`;
+  ctx.font = '700 18px "Cinzel", serif, monospace';
+  const badgeLabel = badgeObj ? ` • BADGE: ${badgeObj.name.toUpperCase()}` : '';
+  const rareLabel = rareArr.length ? ` • [RARE: ${rareArr[0].title.toUpperCase()}]` : '';
+  const themeHeader = `THEME: ${(fortune.theme || 'Destiny & device memory').toUpperCase()}${badgeLabel}${rareLabel}`;
   ctx.fillText(themeHeader, 540, 104);
 
   // Divider line
@@ -455,6 +460,18 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
     console.log('model:', fortune.model);
   }
 
+  // Identity Badge & Rare Cards
+  const badge = fortune.badge || fingerprint.badge || {
+    id: 'everyday-browser',
+    name: 'The Everyday Browser',
+    icon: '🧭',
+    rule: 'You got this because your browser configuration follows standard everyday defaults.'
+  };
+
+  const rareCards = Array.isArray(fortune.rareCards) && fortune.rareCards.length
+    ? fortune.rareCards
+    : (Array.isArray(fingerprint.rareCards) ? fingerprint.rareCards : []);
+
   // Standardize 3 cards
   const cards = Array.isArray(fortune.cards) && fortune.cards.length === 3 ? fortune.cards : [
     {
@@ -530,9 +547,37 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
     });
   }
 
+  // Rare Card Discovery Banner HTML (if any rare card matches)
+  let rareCardsHtml = '';
+  if (rareCards.length > 0) {
+    rareCardsHtml = `
+      <div class="rare-cards-discovery-banner" aria-label="Rare card discovered">
+        <div class="rare-cards-banner-top">
+          <span class="rare-callout-text">✨ You found a rare card!</span>
+          <span class="rare-card-pill">rare card</span>
+        </div>
+        <div class="rare-cards-list">
+          ${rareCards.map(rc => `
+            <div class="rare-card-item">
+              <span class="rare-card-icon">${rc.icon || '✨'}</span>
+              <div class="rare-card-info">
+                <div class="rare-card-title-row">
+                  <strong class="rare-card-title">${rc.title}</strong>
+                  <span class="rare-badge-tag">${rc.label || 'rare card'}</span>
+                </div>
+                <p class="rare-card-rule-desc">${rc.rule}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
   // 1. Three-Card Tarot Spread Triptych HTML (Interactive cards flipping in sequentially)
   const spreadHtml = `
     <div class="tarot-3card-spread-wrapper" aria-label="Three card spread result">
+      ${rareCardsHtml}
       <div class="spread-banner-bar">
         <div class="spread-banner-left">
           <span class="spread-theme-badge">THEME: ${(fortune.theme || 'Destiny & device memory').toUpperCase()}</span>
@@ -681,8 +726,23 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
         </div>
       </div>
 
-      <!-- Hardware & Fingerprint Telemetry Cards (Feature 1 & Feature 2) -->
+      <!-- Hardware & Fingerprint Telemetry Cards (Feature 1 & Feature 2 + Identity Badge) -->
       <div class="telemetry-cards-container">
+        <!-- Identity Badge Card -->
+        <div class="telemetry-card identity-badge-card" aria-label="Identity Badge: ${badge.name}">
+          <div class="telemetry-card-header">
+            <span class="telemetry-card-badge">IDENTITY BADGE</span>
+            <span class="telemetry-card-icon">${badge.icon}</span>
+          </div>
+          <h4 class="telemetry-card-title">${badge.name}</h4>
+          <p class="identity-badge-rule-statement">
+            "${badge.rule}"
+          </p>
+          <div class="identity-badge-sub">
+            Assigned from real passive signals. No percentage or ranking claims.
+          </div>
+        </div>
+
         <!-- Feature 1: Your graphics card -->
         <div class="telemetry-card gpu-card" aria-label="Your graphics card">
           <div class="telemetry-card-header">
@@ -871,6 +931,26 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
             </div>
             <div class="signal-read-value" id="signal-val-latency">${latencyDisplay}</div>
             <div class="signal-read-source">5-sample median round-trip to /api/ping (${latencyTag})</div>
+          </div>
+
+          <!-- Signal 5: Identity Badge -->
+          <div class="signal-read-card" aria-label="Identity Badge">
+            <div class="signal-read-top">
+              <span class="signal-read-name">Identity Badge</span>
+              <span class="signal-read-badge read">read</span>
+            </div>
+            <div class="signal-read-value">${badge.icon} ${badge.name}</div>
+            <div class="signal-read-source">${badge.rule}</div>
+          </div>
+
+          <!-- Signal 6: Rare Archetypes -->
+          <div class="signal-read-card" aria-label="Rare Archetypes">
+            <div class="signal-read-top">
+              <span class="signal-read-name">Rare Card</span>
+              <span class="signal-read-badge ${rareCards.length ? 'read' : 'unavailable'}">${rareCards.length ? 'rare card' : 'none'}</span>
+            </div>
+            <div class="signal-read-value">${rareCards.length ? rareCards.map(r => `${r.icon} ${r.title}`).join(', ') : 'Standard profile'}</div>
+            <div class="signal-read-source">${rareCards.length ? rareCards.map(r => r.rule).join('; ') : 'Passive anomaly heuristics'}</div>
           </div>
         </div>
       </div>

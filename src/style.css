@@ -3475,6 +3475,154 @@ html, body {
   }
 }
 
+/* --------------------------------------------------------------------------
+   Rare Cards Discovery Banner
+   -------------------------------------------------------------------------- */
+.rare-cards-discovery-banner {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(176, 38, 255, 0.18));
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.2);
+  animation: pulseGlow 3s infinite alternate ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+  }
+  100% {
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.35);
+  }
+}
+
+.rare-cards-banner-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+  padding-bottom: 0.5rem;
+}
+
+.rare-callout-text {
+  font-family: var(--font-mystic);
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #fef08a;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+.rare-card-pill {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #000;
+  background: #fbbf24;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.rare-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.rare-card-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.85rem;
+}
+
+.rare-card-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.rare-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex-grow: 1;
+}
+
+.rare-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rare-card-title {
+  font-family: var(--font-mystic);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+
+.rare-badge-tag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.rare-card-rule-desc {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Identity Badge Card
+   -------------------------------------------------------------------------- */
+.identity-badge-card {
+  background: linear-gradient(135deg, rgba(176, 38, 255, 0.08), rgba(0, 255, 157, 0.06));
+  border: 1px solid rgba(176, 38, 255, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.identity-badge-card .telemetry-card-title {
+  color: #c084fc;
+  font-size: 1.15rem;
+  margin-bottom: 0.4rem;
+}
+
+.identity-badge-rule-statement {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #f1f5f9;
+  margin: 0 0 0.5rem 0;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--neon-green);
+}
+
+.identity-badge-sub {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+
 
 
 

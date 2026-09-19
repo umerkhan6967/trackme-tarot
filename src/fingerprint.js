@@ -6,6 +6,8 @@
  * All computations and signal evaluations run 100% client-side in-memory.
  */
 
+import { determineIdentityBadge, detectRareCards } from './identity.js';
+
 // 30 common cross-platform fonts to probe
 const FONT_CANDIDATES = [
   'Arial', 'Arial Black', 'Calibri', 'Cambria', 'Comic Sans MS',
@@ -106,6 +108,55 @@ function getCanvasFingerprintHash() {
     return shortHash(dataUri);
   } catch {
     return 'unknown';
+  }
+}
+
+/**
+ * Detects if canvas extraction is blocked or randomised (noise-injected)
+ */
+function probeCanvasProtection() {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 16;
+    canvas.height = 16;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return { blocked: true, randomised: false, protected: true };
+
+    ctx.fillStyle = '#f00';
+    ctx.fillRect(0, 0, 16, 16);
+    const d1 = canvas.toDataURL();
+    const d2 = canvas.toDataURL();
+
+    const isRandomised = d1 !== d2;
+    const imgData = ctx.getImageData(0, 0, 16, 16).data;
+    const isAllZero = imgData.every(val => val === 0);
+    const isBlocked = isAllZero || !d1 || d1.length < 50;
+
+    return {
+      blocked: isBlocked,
+      randomised: isRandomised,
+      protected: isBlocked || isRandomised
+    };
+  } catch {
+    return { blocked: true, randomised: false, protected: true };
+  }
+}
+
+/**
+ * Detects automation (navigator.webdriver or headless browser user agent)
+ */
+function probeAutomation() {
+  try {
+    const webdriver = typeof navigator !== 'undefined' ? Boolean(navigator.webdriver) : false;
+    const ua = typeof navigator !== 'undefined' ? (navigator.userAgent || '').toLowerCase() : '';
+    const isHeadless = /headlesschrome|phantomjs|puppeteer|playwright|selenium/i.test(ua) || webdriver;
+    return {
+      webdriver,
+      isHeadless,
+      isAutomated: webdriver || isHeadless
+    };
+  } catch {
+    return { webdriver: false, isHeadless: false, isAutomated: false };
   }
 }
 
@@ -560,29 +611,52 @@ export async function collectSignals() {
     signals.canvasHash = 'unknown';
   }
 
+  // 11b. Canvas Output Protection (Blocked or Randomised)
+  try {
+    signals.canvasProtection = probeCanvasProtection();
+  } catch {
+    signals.canvasProtection = { blocked: false, randomised: false, protected: false };
+  }
+
+  // 11c. Automation Probe (Webdriver & Headless)
+  try {
+    signals.automation = probeAutomation();
+  } catch {
+    signals.automation = { webdriver: false, isHeadless: false, isAutomated: false };
+  }
+
   // 12. Cookies Enabled, Do Not Track, Global Privacy Control, Ad Blocker Detection
   try {
     const cookiesEnabled = navigator.cookieEnabled ?? 'unknown';
+    const cookiesRestricted = cookiesEnabled === false || cookiesEnabled === 'unknown';
     const doNotTrack = getDntStatus();
     const globalPrivacyControl = getGpcStatus();
     const adBlockerDetected = await detectAdBlocker();
 
     signals.privacy = {
       cookiesEnabled,
+      cookiesRestricted,
       doNotTrack,
       dnt: doNotTrack,
       globalPrivacyControl,
       gpc: globalPrivacyControl,
-      adBlockerDetected
+      adBlockerDetected,
+      canvasProtected: signals.canvasProtection.protected,
+      canvasBlocked: signals.canvasProtection.blocked,
+      canvasRandomised: signals.canvasProtection.randomised
     };
   } catch {
     signals.privacy = {
       cookiesEnabled: 'unknown',
+      cookiesRestricted: false,
       doNotTrack: 'unavailable',
       dnt: 'unavailable',
       globalPrivacyControl: 'unavailable',
       gpc: 'unavailable',
-      adBlockerDetected: 'unknown'
+      adBlockerDetected: 'unknown',
+      canvasProtected: false,
+      canvasBlocked: false,
+      canvasRandomised: false
     };
   }
 
@@ -1027,8 +1101,24 @@ export async function getBrowserFingerprint() {
   // 3. FINGERPRINT HASH: Combine canvas, OfflineAudioContext sample, and WebGL renderer
   const fpHashInfo = await generateFingerprintHash(canvasDataUrl, gpuInfo.rawRenderer || gpuInfo.renderer);
 
-  // 4. Signals Registry with (value, status: "read" | "approximate" | "unavailable", source, note)
+  // 4. Evaluate Identity Badge & Rare Archetypes
+  const badge = determineIdentityBadge(signals);
+  const rareCards = detectRareCards(signals);
+
+  // 5. Signals Registry with (value, status: "read" | "approximate" | "unavailable", source, note)
   const registry = buildSignalsRegistry(signals, gpuInfo, fpHashInfo);
+  registry.identityBadge = {
+    value: badge.name,
+    status: 'read',
+    source: 'Real passive signals evaluation',
+    note: badge.rule
+  };
+  registry.rareArchetypes = {
+    value: rareCards.length ? rareCards.map(r => r.title).join(', ') : 'none',
+    status: 'read',
+    source: 'Passive anomaly detection',
+    note: rareCards.length ? 'rare card' : 'Standard profile'
+  };
 
   return {
     signals,
@@ -1072,7 +1162,10 @@ export async function getBrowserFingerprint() {
     canvasHash: signals.canvasHash,
     fontsInstalledCount: signals.fonts?.installedCount ?? 0,
     isMobile: signals.deviceType === 'mobile',
-    isTouchDevice: signals.preferences.touchSupport === true
+    isTouchDevice: signals.preferences.touchSupport === true,
+    badge,
+    rareCards,
+    hasRareCard: rareCards.length > 0
   };
 }
 
