@@ -705,6 +705,12 @@ export function buildSignalsRegistry(signals, gpuInfo, fpHashInfo) {
       status: signals.privacy?.adBlockerDetected !== 'unknown' ? 'read' : 'unavailable',
       source: 'DOM ad-element probe & navigator.doNotTrack',
       note: 'Ad blocker detection and Do-Not-Track headers'
+    },
+    behaviour: {
+      value: null,
+      status: 'unavailable',
+      source: 'Local behavioural biometrics measurement',
+      note: '5-second mouse/touch motion and keystroke dynamics'
     }
   };
 }

@@ -2768,4 +2768,213 @@ html, body {
   margin-top: 0.45rem;
 }
 
+/* --------------------------------------------------------------------------
+   5-Second Behaviour Measurement Test Card
+   -------------------------------------------------------------------------- */
+.behaviour-card {
+  position: relative;
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.75), rgba(30, 27, 75, 0.45));
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.behaviour-card:hover {
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.12);
+}
+
+.behaviour-start-btn {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.behaviour-start-btn:hover {
+  background: rgba(168, 85, 247, 0.25);
+  border-color: #c084fc;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.3);
+}
+
+.behaviour-test-active {
+  animation: fadeSlideUp 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.behaviour-timer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.behaviour-timer-badge {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #c084fc;
+}
+
+.behaviour-countdown {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #00ff9d;
+  text-shadow: 0 0 8px rgba(0, 255, 157, 0.5);
+}
+
+.behaviour-track-zone {
+  height: 64px;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.02) 10px,
+    rgba(255, 255, 255, 0.04) 10px,
+    rgba(255, 255, 255, 0.04) 20px
+  );
+  border: 1px dashed rgba(168, 85, 247, 0.4);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: crosshair;
+  user-select: none;
+  touch-action: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.behaviour-track-zone:hover, .behaviour-track-zone:active {
+  border-color: var(--neon-green);
+  background: rgba(0, 255, 157, 0.05);
+}
+
+.track-zone-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  pointer-events: none;
+}
+
+.behaviour-typing-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.behaviour-input-label {
+  font-size: 0.7rem;
+  color: #cbd5e1;
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+.behaviour-input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  background: rgba(5, 7, 12, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.behaviour-input:focus {
+  border-color: #c084fc;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.35);
+}
+
+.touch-skip-notice {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+}
+
+.behaviour-test-results {
+  animation: fadeSlideUp 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.behaviour-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.behaviour-metric-item {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.behaviour-metric-item .metric-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.behaviour-metric-item .metric-val {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--neon-green);
+}
+
+.behaviour-quote {
+  font-style: italic;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #f1f5f9;
+  border-left: 2px solid #c084fc;
+  padding-left: 0.65rem;
+  margin: 0.4rem 0 0.1rem 0;
+}
+
+.retry-behaviour-btn {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem 0;
+  transition: color 0.2s;
+}
+
+.retry-behaviour-btn:hover {
+  color: var(--neon-green);
+}
+
+
 

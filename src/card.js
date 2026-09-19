@@ -536,6 +536,79 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
           </button>
           <div id="connection-reveal-result" class="connection-reveal-result hidden" aria-live="polite"></div>
         </div>
+
+        <!-- Feature 4: 5-Second Behaviour Measurement Test -->
+        <div class="telemetry-card behaviour-card" aria-label="Behaviour Measurement Test">
+          <div class="telemetry-card-header">
+            <span class="telemetry-card-badge">BEHAVIOURAL BIOMETRICS</span>
+            <span class="telemetry-card-icon">⚡</span>
+          </div>
+          <h4 class="telemetry-card-title">Behaviour test</h4>
+          <p class="telemetry-card-sub" style="margin-bottom: 0.75rem;">
+            Move your mouse (or drag on touch) and type in the box during the 5-second countdown to see how passive biometrics profile you.
+          </p>
+
+          <div id="behaviour-test-idle">
+            <button id="btn-start-behaviour" class="cyber-btn tertiary behaviour-start-btn" type="button">
+              <span class="btn-icon">⏱️</span> Start 5-second test
+            </button>
+          </div>
+
+          <div id="behaviour-test-active" class="behaviour-test-active hidden">
+            <div class="behaviour-timer-row">
+              <span class="behaviour-timer-badge">COUNTDOWN</span>
+              <span id="behaviour-countdown" class="behaviour-countdown">5.0s</span>
+            </div>
+
+            <div id="behaviour-track-zone" class="behaviour-track-zone" tabindex="0">
+              <span id="track-zone-hint" class="track-zone-hint">Move mouse / drag pointer here</span>
+            </div>
+
+            <div id="behaviour-typing-area" class="behaviour-typing-area">
+              <label for="behaviour-input" class="behaviour-input-label">Type in the box:</label>
+              <input
+                type="text"
+                id="behaviour-input"
+                class="behaviour-input"
+                placeholder="Type anything here (e.g. quick brown fox)..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+            <div id="touch-skip-notice" class="touch-skip-notice hidden">
+              📱 Touch device: touch movement measured (typing skipped)
+            </div>
+          </div>
+
+          <div id="behaviour-test-results" class="behaviour-test-results hidden" aria-live="polite">
+            <div class="behaviour-metrics-grid">
+              <div class="behaviour-metric-item">
+                <span id="lbl-mouse-speed" class="metric-label">Mouse Speed</span>
+                <span id="metric-mouse-speed" class="metric-val">0 px/s</span>
+              </div>
+              <div class="behaviour-metric-item">
+                <span class="metric-label">Pauses (&gt;300ms)</span>
+                <span id="metric-pauses" class="metric-val">0</span>
+              </div>
+              <div class="behaviour-metric-item">
+                <span class="metric-label">Typing Speed</span>
+                <span id="metric-typing-speed" class="metric-val">0 chars/s</span>
+              </div>
+              <div class="behaviour-metric-item">
+                <span class="metric-label">Avg Keystroke Gap</span>
+                <span id="metric-keystroke-gap" class="metric-val">0 ms</span>
+              </div>
+            </div>
+
+            <p class="behaviour-quote">
+              "Websites can measure this without asking."
+            </p>
+            <div class="reveal-footnote">100% in-memory client-side • Text cleared • Nothing leaves the browser</div>
+            <button id="btn-retry-behaviour" class="cyber-btn text-link retry-behaviour-btn" type="button">
+              ↺ Test again
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Why This Score List -->
@@ -578,6 +651,9 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
 
   // Initialize opt-in connection reveal listener
   initConnectionReveal();
+
+  // Initialize 5-second behaviour measurement test
+  initBehaviourTest(fingerprint);
 
   return canvas;
 }
@@ -853,4 +929,233 @@ export function initConnectionReveal() {
     }
   });
 }
+
+/**
+ * 5-second Behaviour Measurement Test
+ * Measures mouse/touch movement speed (px/s), pauses (>300ms),
+ * typing speed (chars/s), and average gap between keystrokes (ms).
+ * Nothing leaves the browser and nothing is stored.
+ * The text typed is shown only in the input box and cleared afterwards.
+ * Updates fingerprint.registry.behaviour with status "read".
+ */
+export function initBehaviourTest(fingerprint) {
+  const startBtn = document.getElementById('btn-start-behaviour');
+  const retryBtn = document.getElementById('btn-retry-behaviour');
+  const idleView = document.getElementById('behaviour-test-idle');
+  const activeView = document.getElementById('behaviour-test-active');
+  const resultsView = document.getElementById('behaviour-test-results');
+  const countdownEl = document.getElementById('behaviour-countdown');
+  const trackZone = document.getElementById('behaviour-track-zone');
+  const trackHint = document.getElementById('track-zone-hint');
+  const typingArea = document.getElementById('behaviour-typing-area');
+  const inputEl = document.getElementById('behaviour-input');
+  const touchSkipNotice = document.getElementById('touch-skip-notice');
+  const lblMouseSpeed = document.getElementById('lbl-mouse-speed');
+  const valMouseSpeed = document.getElementById('metric-mouse-speed');
+  const valPauses = document.getElementById('metric-pauses');
+  const valTypingSpeed = document.getElementById('metric-typing-speed');
+  const valKeystrokeGap = document.getElementById('metric-keystroke-gap');
+
+  if (!startBtn || !idleView || !activeView || !resultsView) return;
+
+  // Touch device detection (touchscreen without physical mouse/keyboard)
+  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  const hasCoarseOnly = window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches;
+  const isTouchOnly = Boolean(isTouchDevice && hasCoarseOnly);
+
+  if (isTouchOnly) {
+    if (trackHint) trackHint.textContent = 'Drag finger across this area';
+    if (lblMouseSpeed) lblMouseSpeed.textContent = 'Touch Speed';
+    if (touchSkipNotice) touchSkipNotice.classList.remove('hidden');
+    if (typingArea) typingArea.classList.add('hidden');
+  }
+
+  let animationFrameId = null;
+  let testActive = false;
+
+  function startTest() {
+    if (testActive) return;
+    testActive = true;
+
+    // View switching
+    idleView.classList.add('hidden');
+    resultsView.classList.add('hidden');
+    activeView.classList.remove('hidden');
+
+    if (inputEl) {
+      inputEl.value = '';
+      if (!isTouchOnly) {
+        inputEl.focus();
+      }
+    }
+
+    // Telemetry accumulators
+    let totalPointerDistance = 0;
+    let lastPointerPos = null;
+    let lastPointerTime = null;
+    let pauseCount = 0;
+    let hasMoved = false;
+
+    let charsTypedCount = 0;
+    let lastKeystrokeTime = null;
+    const keystrokeGaps = [];
+
+    const duration = 5000; // 5.0 seconds
+    const startTime = performance.now();
+
+    // Pointer move listener (mouse + touch)
+    function onPointerMove(e) {
+      if (!testActive) return;
+      const now = performance.now();
+      const clientX = e.clientX ?? (e.touches && e.touches[0] ? e.touches[0].clientX : null);
+      const clientY = e.clientY ?? (e.touches && e.touches[0] ? e.touches[0].clientY : null);
+      if (clientX === null || clientY === null) return;
+
+      if (lastPointerPos) {
+        const dx = clientX - lastPointerPos.x;
+        const dy = clientY - lastPointerPos.y;
+        const dist = Math.hypot(dx, dy);
+        totalPointerDistance += dist;
+
+        if (lastPointerTime !== null) {
+          const dt = now - lastPointerTime;
+          if (dt > 300) {
+            pauseCount++;
+          }
+        }
+      }
+      lastPointerPos = { x: clientX, y: clientY };
+      lastPointerTime = now;
+      hasMoved = true;
+    }
+
+    // Keystroke listeners (only active for devices with keyboard)
+    function onKeyDown(e) {
+      if (!testActive || isTouchOnly) return;
+      const now = performance.now();
+      if (lastKeystrokeTime !== null) {
+        const gap = now - lastKeystrokeTime;
+        keystrokeGaps.push(gap);
+      }
+      lastKeystrokeTime = now;
+    }
+
+    function onInput(e) {
+      if (!testActive || isTouchOnly) return;
+      if (e.inputType && e.inputType.startsWith('insert')) {
+        charsTypedCount += (e.data ? e.data.length : 1);
+      } else if (inputEl && inputEl.value) {
+        charsTypedCount = Math.max(charsTypedCount, inputEl.value.length);
+      }
+    }
+
+    // Attach listeners
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('touchmove', onPointerMove, { passive: true });
+    if (inputEl && !isTouchOnly) {
+      inputEl.addEventListener('keydown', onKeyDown);
+      inputEl.addEventListener('input', onInput);
+    }
+
+    function tick() {
+      const now = performance.now();
+      const elapsed = now - startTime;
+      const remaining = Math.max(0, duration - elapsed);
+
+      if (countdownEl) {
+        countdownEl.textContent = `${(remaining / 1000).toFixed(1)}s`;
+      }
+
+      if (remaining > 0) {
+        animationFrameId = requestAnimationFrame(tick);
+      } else {
+        finishTest(now);
+      }
+    }
+
+    function finishTest(endTime) {
+      testActive = false;
+      cancelAnimationFrame(animationFrameId);
+
+      // Clean up event listeners
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('touchmove', onPointerMove);
+      if (inputEl) {
+        inputEl.removeEventListener('keydown', onKeyDown);
+        inputEl.removeEventListener('input', onInput);
+
+        // REQUIREMENT: Nothing leaves the browser and nothing is stored.
+        // Show the text typed only in that box and clear it afterwards.
+        inputEl.value = '';
+        inputEl.blur();
+      }
+
+      // Check pauses: if user never moved, that is 1 idle pause; if they stopped moving >300ms before test end, count it
+      if (!hasMoved) {
+        pauseCount = 1;
+      } else if (lastPointerTime !== null) {
+        const trailingIdle = endTime - lastPointerTime;
+        if (trailingIdle > 300) {
+          pauseCount++;
+        }
+      }
+
+      const testDurationSec = 5.0;
+      const avgPointerSpeed = Math.round(totalPointerDistance / testDurationSec);
+      const typingSpeed = isTouchOnly ? 0 : Number((charsTypedCount / testDurationSec).toFixed(1));
+      const avgKeystrokeGap = (!isTouchOnly && keystrokeGaps.length > 0)
+        ? Math.round(keystrokeGaps.reduce((sum, g) => sum + g, 0) / keystrokeGaps.length)
+        : 0;
+
+      // Update Results Display
+      if (valMouseSpeed) {
+        valMouseSpeed.textContent = `${avgPointerSpeed} px/s`;
+      }
+      if (valPauses) {
+        valPauses.textContent = `${pauseCount}`;
+      }
+      if (valTypingSpeed) {
+        valTypingSpeed.textContent = isTouchOnly ? 'Skipped (touch)' : `${typingSpeed} chars/s`;
+      }
+      if (valKeystrokeGap) {
+        valKeystrokeGap.textContent = isTouchOnly
+          ? 'Skipped (touch)'
+          : (keystrokeGaps.length > 0 ? `${avgKeystrokeGap} ms` : '0 ms');
+      }
+
+      // Transition views
+      activeView.classList.add('hidden');
+      resultsView.classList.remove('hidden');
+
+      // REQUIREMENT: Add the results to the signals registry as status "read"
+      if (fingerprint && fingerprint.registry) {
+        fingerprint.registry.behaviour = {
+          value: {
+            mouseSpeedPxPerSec: avgPointerSpeed,
+            pausesOver300ms: pauseCount,
+            typingSpeedCharsPerSec: isTouchOnly ? null : typingSpeed,
+            avgKeystrokeGapMs: isTouchOnly ? null : avgKeystrokeGap,
+            pointerType: isTouchOnly ? 'touch' : 'mouse'
+          },
+          status: 'read',
+          source: 'Local behavioural biometrics measurement (pointer & keystroke dynamics)',
+          note: 'Passive pointer motion and typing dynamics measured locally in 5-second test'
+        };
+        console.log('[SIGNALS REGISTRY] Updated behaviour telemetry:', fingerprint.registry.behaviour);
+      }
+    }
+
+    animationFrameId = requestAnimationFrame(tick);
+  }
+
+  startBtn.addEventListener('click', startTest);
+  if (retryBtn) {
+    retryBtn.addEventListener('click', () => {
+      resultsView.classList.add('hidden');
+      idleView.classList.remove('hidden');
+      if (countdownEl) countdownEl.textContent = '5.0s';
+    });
+  }
+}
+
 
