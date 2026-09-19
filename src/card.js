@@ -62,26 +62,47 @@ export function generateTarotCardCanvas({ fortune, fingerprint, score }) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return canvas;
 
+  const cards = Array.isArray(fortune.cards) && fortune.cards.length === 3 ? fortune.cards : [
+    {
+      title: 'What the internet already knows',
+      archetype: fortune.archetype || 'The Digital Phantom',
+      reading: fortune.fortune || 'Stable telemetry vectors reveal your exact operating system and screen geometry.',
+      vibe_emoji: fortune.vibe_emoji || '🔮'
+    },
+    {
+      title: 'How exposed you are right now',
+      archetype: 'The Open Gateway',
+      reading: `Exposure Score: ${score?.score ?? 50}/100. Ambient signals broadcast your silicon silhouette.`,
+      vibe_emoji: '⚡'
+    },
+    {
+      title: 'What happens if you ignore this',
+      archetype: 'The Algorithmic Loop',
+      reading: fortune.prediction || 'You will open an empty browser tab tomorrow and forget your intention.',
+      vibe_emoji: '🌀'
+    }
+  ];
+
   // 1. Background: Deep obsidian with cyber-mystic ambient gradients
   ctx.fillStyle = '#06070b';
   ctx.fillRect(0, 0, 1080, 1350);
 
   // Radial purple occult glow top center
-  const purpleGlow = ctx.createRadialGradient(540, 260, 50, 540, 260, 500);
-  purpleGlow.addColorStop(0, 'rgba(176, 38, 255, 0.25)');
+  const purpleGlow = ctx.createRadialGradient(540, 240, 50, 540, 240, 500);
+  purpleGlow.addColorStop(0, 'rgba(176, 38, 255, 0.22)');
   purpleGlow.addColorStop(1, 'rgba(6, 7, 11, 0)');
   ctx.fillStyle = purpleGlow;
   ctx.fillRect(0, 0, 1080, 750);
 
   // Radial neon emerald glow bottom center
-  const greenGlow = ctx.createRadialGradient(540, 1050, 40, 540, 1050, 480);
-  greenGlow.addColorStop(0, 'rgba(0, 255, 157, 0.15)');
+  const greenGlow = ctx.createRadialGradient(540, 1080, 40, 540, 1080, 480);
+  greenGlow.addColorStop(0, 'rgba(0, 255, 157, 0.14)');
   greenGlow.addColorStop(1, 'rgba(6, 7, 11, 0)');
   ctx.fillStyle = greenGlow;
   ctx.fillRect(0, 700, 1080, 650);
 
   // Cyber subtle grid pattern
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.022)';
   ctx.lineWidth = 1;
   for (let x = 40; x < 1080; x += 40) {
     ctx.beginPath();
@@ -97,107 +118,77 @@ export function generateTarotCardCanvas({ fortune, fingerprint, score }) {
   }
 
   // 2. Ornate Double Glowing Border
-  const pad = 44;
-  const cornerR = 24;
+  const pad = 36;
+  const cornerR = 20;
 
   // Outer border
-  ctx.strokeStyle = 'rgba(176, 38, 255, 0.6)';
+  ctx.strokeStyle = 'rgba(176, 38, 255, 0.55)';
   ctx.lineWidth = 2.5;
-  ctx.shadowColor = 'rgba(176, 38, 255, 0.5)';
-  ctx.shadowBlur = 15;
+  ctx.shadowColor = 'rgba(176, 38, 255, 0.4)';
+  ctx.shadowBlur = 12;
   roundRect(ctx, pad, pad, 1080 - pad * 2, 1350 - pad * 2, cornerR);
   ctx.stroke();
 
   // Inner border
   ctx.shadowBlur = 0;
-  ctx.strokeStyle = 'rgba(0, 255, 157, 0.4)';
+  ctx.strokeStyle = 'rgba(0, 255, 157, 0.35)';
   ctx.lineWidth = 1.5;
-  roundRect(ctx, pad + 14, pad + 14, 1080 - (pad + 14) * 2, 1350 - (pad + 14) * 2, cornerR - 8);
+  roundRect(ctx, pad + 12, pad + 12, 1080 - (pad + 12) * 2, 1350 - (pad + 12) * 2, cornerR - 6);
   ctx.stroke();
 
   // Corner Sigil Markers
   ctx.fillStyle = '#00ff9d';
-  ctx.font = '22px monospace';
+  ctx.font = '20px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('◈', pad + 32, pad + 36);
-  ctx.fillText('◈', 1080 - (pad + 32), pad + 36);
-  ctx.fillText('◈', pad + 32, 1350 - (pad + 20));
-  ctx.fillText('◈', 1080 - (pad + 32), 1350 - (pad + 20));
+  ctx.fillText('◈', pad + 26, pad + 30);
+  ctx.fillText('◈', 1080 - (pad + 26), pad + 30);
+  ctx.fillText('◈', pad + 26, 1350 - (pad + 16));
+  ctx.fillText('◈', 1080 - (pad + 26), 1350 - (pad + 16));
 
   // 3. Card Header Bar
   ctx.textAlign = 'center';
   ctx.fillStyle = '#a855f7';
-  ctx.font = '700 18px monospace';
-  ctx.letterSpacing = '3px';
-  ctx.fillText('◈ TRACKMETAROT // ZERO-LOGIN DIVINATION ◈', 540, 88);
+  ctx.font = '700 16px monospace';
+  ctx.letterSpacing = '2.5px';
+  ctx.fillText('◈ TRACKMETAROT // THREE-CARD DIVINATION ◈', 540, 76);
 
   ctx.fillStyle = '#00ff9d';
-  ctx.font = '700 22px "Cinzel", serif, monospace';
-  const headerMeta = `ARCANUM ${fortune.numeral || 'XVIII'}  •  ${fortune.suit || 'SUIT OF CIPHERS'}`;
-  ctx.fillText(headerMeta, 540, 120);
+  ctx.font = '700 20px "Cinzel", serif, monospace';
+  const themeHeader = `THEME: ${(fortune.theme || 'Destiny & device memory').toUpperCase()}`;
+  ctx.fillText(themeHeader, 540, 104);
 
   // Divider line
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
   ctx.beginPath();
-  ctx.moveTo(140, 138);
-  ctx.lineTo(940, 138);
+  ctx.moveTo(120, 118);
+  ctx.lineTo(960, 118);
   ctx.stroke();
 
-  // 4. Large Vibe Emoji Avatar
-  const emoji = fortune.vibe_emoji || fortune.avatar || '🔮';
-  ctx.font = '85px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.shadowColor = 'rgba(0, 255, 157, 0.4)';
-  ctx.shadowBlur = 24;
-  ctx.fillText(emoji, 540, 224);
-  ctx.shadowBlur = 0;
-
-  // 5. Archetype Title
-  const title = (fortune.archetype || fortune.title || 'THE DIGITAL PHANTOM').toUpperCase();
-  ctx.fillStyle = '#ffffff';
-  let titleSize = 48;
-  ctx.font = `900 ${titleSize}px "Cinzel", serif, sans-serif`;
-  while (ctx.measureText(title).width > 900 && titleSize > 34) {
-    titleSize -= 2;
-    ctx.font = `900 ${titleSize}px "Cinzel", serif, sans-serif`;
-  }
-  ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-  ctx.shadowBlur = 16;
-  ctx.fillText(title, 540, 285);
-  ctx.shadowBlur = 0;
-
-  // Subtitle
-  ctx.fillStyle = '#00ff9d';
-  ctx.font = '600 22px monospace';
-  ctx.fillText(fortune.subtitle || `Aura: ${emoji} // Certified Footprint`, 540, 320);
-
-  // 6. Digital Exposure Score Box
-  const scoreBoxY = 345;
-  const scoreBoxW = 840;
-  const scoreBoxH = 66;
+  // 4. Digital Exposure Score Box
+  const scoreBoxY = 132;
+  const scoreBoxW = 960;
+  const scoreBoxH = 58;
   const scoreBoxX = (1080 - scoreBoxW) / 2;
 
-  // Score Box Background
   ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
-  roundRect(ctx, scoreBoxX, scoreBoxY, scoreBoxW, scoreBoxH, 12);
+  roundRect(ctx, scoreBoxX, scoreBoxY, scoreBoxW, scoreBoxH, 10);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(176, 38, 255, 0.5)';
+  ctx.strokeStyle = 'rgba(176, 38, 255, 0.45)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Score text
   ctx.textAlign = 'left';
   ctx.fillStyle = '#94a3b8';
-  ctx.font = '700 22px monospace';
-  ctx.fillText('DIGITAL EXPOSURE SCORE:', scoreBoxX + 24, scoreBoxY + 41);
+  ctx.font = '700 19px monospace';
+  ctx.fillText('DIGITAL EXPOSURE SCORE:', scoreBoxX + 22, scoreBoxY + 36);
 
   ctx.textAlign = 'right';
   ctx.fillStyle = score.score >= 75 ? '#ff4757' : (score.score >= 50 ? '#f59e0b' : '#00ff9d');
-  ctx.font = '900 28px monospace';
-  ctx.fillText(`${score.score}/100 [${(score.level || 'HIGH').toUpperCase()}]`, scoreBoxX + scoreBoxW - 24, scoreBoxY + 43);
+  ctx.font = '900 24px monospace';
+  ctx.fillText(`${score.score}/100 [${(score.level || 'HIGH').toUpperCase()}]`, scoreBoxX + scoreBoxW - 22, scoreBoxY + 38);
 
-  // 7. Telemetry Signals Pill Strip
-  const telY = 426;
+  // 5. Telemetry Signals Pill Strip
+  const telY = 202;
   const telemetryBadges = [
     `${fingerprint.cores || 4} CPU Cores`,
     `${fingerprint.resolution || '1920x1080'}`,
@@ -206,40 +197,123 @@ export function generateTarotCardCanvas({ fortune, fingerprint, score }) {
   ];
 
   ctx.textAlign = 'center';
-  const badgeWidth = 205;
-  const badgeGap = 16;
+  const badgeWidth = 230;
+  const badgeGap = 13;
   const totalBadgesWidth = (badgeWidth * 4) + (badgeGap * 3);
   const startBadgeX = (1080 - totalBadgesWidth) / 2;
 
   telemetryBadges.forEach((badge, idx) => {
     const bx = startBadgeX + idx * (badgeWidth + badgeGap);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
-    roundRect(ctx, bx, telY, badgeWidth, 38, 8);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
+    roundRect(ctx, bx, telY, badgeWidth, 34, 7);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.stroke();
 
     ctx.fillStyle = '#cbd5e1';
-    ctx.font = '700 18px monospace';
-    ctx.fillText(badge, bx + badgeWidth / 2, telY + 25);
+    ctx.font = '700 15px monospace';
+    ctx.fillText(badge, bx + badgeWidth / 2, telY + 22);
   });
 
-  // 8. The Fortune Reading
-  const quoteBoxY = 485;
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'italic 600 28px "JetBrains Mono", monospace';
-  ctx.textAlign = 'center';
-  const fortuneText = `"${fortune.fortune || fortune.quote || ''}"`;
-  const nextY = wrapText(ctx, fortuneText, 540, quoteBoxY + 34, 880, 42, true);
+  // 6. The Three Spread Cards Columns (Cards I, II, III)
+  const spreadY = 252;
+  const spreadH = 630;
+  const colW = 306;
+  const colGap = 21;
+  const startColX = (1080 - (colW * 3 + colGap * 2)) / 2;
 
-  // 9. Tomorrow's Absurd Prophecy Box
-  const propY = Math.max(nextY + 18, 690);
-  const propW = 880;
+  const cardMetaConfigs = [
+    {
+      numeral: 'CARD I • PAST',
+      subrole: 'THE KNOWN',
+      borderColor: 'rgba(0, 255, 157, 0.45)',
+      glowColor: 'rgba(0, 255, 157, 0.25)',
+      accentColor: '#00ff9d'
+    },
+    {
+      numeral: 'CARD II • PRESENT',
+      subrole: 'EXPOSURE',
+      borderColor: 'rgba(176, 38, 255, 0.55)',
+      glowColor: 'rgba(176, 38, 255, 0.3)',
+      accentColor: '#c084fc'
+    },
+    {
+      numeral: 'CARD III • FUTURE',
+      subrole: 'PROPHECY',
+      borderColor: 'rgba(245, 158, 11, 0.5)',
+      glowColor: 'rgba(245, 158, 11, 0.25)',
+      accentColor: '#fbbf24'
+    }
+  ];
+
+  cards.forEach((card, idx) => {
+    const colX = startColX + idx * (colW + colGap);
+    const cfg = cardMetaConfigs[idx] || cardMetaConfigs[0];
+
+    // Card Box Background
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+    roundRect(ctx, colX, spreadY, colW, spreadH, 12);
+    ctx.fill();
+
+    // Card border with subtle glow
+    ctx.strokeStyle = cfg.borderColor;
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, colX, spreadY, colW, spreadH, 12);
+    ctx.stroke();
+
+    // Top Card Label
+    ctx.textAlign = 'center';
+    ctx.fillStyle = cfg.accentColor;
+    ctx.font = '700 13px monospace';
+    ctx.letterSpacing = '1px';
+    ctx.fillText(cfg.numeral, colX + colW / 2, spreadY + 28);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '600 11px monospace';
+    ctx.letterSpacing = '1.5px';
+    ctx.fillText(cfg.subrole, colX + colW / 2, spreadY + 45);
+
+    // Card Emoji
+    ctx.font = '48px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+    ctx.shadowColor = cfg.glowColor;
+    ctx.shadowBlur = 16;
+    ctx.fillText(card.vibe_emoji || '🔮', colX + colW / 2, spreadY + 104);
+    ctx.shadowBlur = 0;
+
+    // Archetype Title
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 17px "Cinzel", serif, sans-serif';
+    const archName = (card.archetype || 'The Voyager').toUpperCase();
+    wrapText(ctx, archName, colX + colW / 2, spreadY + 140, colW - 24, 22, true);
+
+    // Inner divider
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.beginPath();
+    ctx.moveTo(colX + 24, spreadY + 185);
+    ctx.lineTo(colX + colW - 24, spreadY + 185);
+    ctx.stroke();
+
+    // Role Subtitle
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '600 11px monospace';
+    const subTitle = (card.title || '').toUpperCase();
+    wrapText(ctx, subTitle, colX + colW / 2, spreadY + 208, colW - 28, 16, true);
+
+    // Reading Text
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '14px "JetBrains Mono", monospace';
+    ctx.textAlign = 'left';
+    wrapText(ctx, card.reading || '', colX + 16, spreadY + 252, colW - 32, 22, false);
+  });
+
+  // 7. Tomorrow's Absurd Prophecy Box
+  const propY = 898;
+  const propW = 960;
   const propX = (1080 - propW) / 2;
-  const propH = 155;
+  const propH = 150;
 
   ctx.fillStyle = 'rgba(176, 38, 255, 0.08)';
-  roundRect(ctx, propX, propY, propW, propH, 14);
+  roundRect(ctx, propX, propY, propW, propH, 12);
   ctx.fill();
   ctx.strokeStyle = 'rgba(176, 38, 255, 0.4)';
   ctx.lineWidth = 1.5;
@@ -247,44 +321,49 @@ export function generateTarotCardCanvas({ fortune, fingerprint, score }) {
 
   ctx.textAlign = 'left';
   ctx.fillStyle = '#c084fc';
-  ctx.font = '700 22px monospace';
-  ctx.fillText('🔮 TOMORROW\'S PROPHECY:', propX + 26, propY + 36);
+  ctx.font = '700 20px monospace';
+  ctx.fillText('🔮 TOMORROW\'S PROPHECY:', propX + 24, propY + 34);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = '500 26px monospace';
+  ctx.font = '500 22px monospace';
   const predText = fortune.prediction || 'You will open a new browser tab to search something and forget what it was.';
-  wrapText(ctx, predText, propX + 26, propY + 76, propW - 52, 35);
+  wrapText(ctx, predText, propX + 24, propY + 70, propW - 48, 30);
 
-  // 10. Exposure Mitigation Protocols (Fix-it) summary
-  const fixY = propY + propH + 20;
+  // 8. Exposure Mitigation Protocols Box
+  const fixY = 1062;
+  const fixH = 150;
   const tips = (fortune.exposure_tips || fortune.tips || []).slice(0, 2);
-  if (tips.length) {
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#00ff9d';
-    ctx.font = '700 22px monospace';
-    ctx.fillText('⚡ KEY EXPOSURE PROTOCOL:', propX + 26, fixY + 16);
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '500 23px monospace';
-    let currentTipY = fixY + 48;
-    tips.forEach((tip) => {
-      currentTipY = wrapText(ctx, `• ${tip}`, propX + 26, currentTipY, propW - 52, 30);
-    });
-  }
+  ctx.fillStyle = 'rgba(0, 255, 157, 0.04)';
+  roundRect(ctx, propX, fixY, propW, fixH, 12);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0, 255, 157, 0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
 
-  // 11. Watermark & Branding at Bottom
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#00ff9d';
+  ctx.font = '700 20px monospace';
+  ctx.fillText('⚡ KEY EXPOSURE PROTOCOLS:', propX + 24, fixY + 34);
+
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = '500 20px monospace';
+  let currentTipY = fixY + 68;
+  tips.forEach((tip) => {
+    currentTipY = wrapText(ctx, `• ${tip}`, propX + 24, currentTipY, propW - 48, 28);
+  });
+
+  // 9. Watermark & Branding at Bottom
   ctx.textAlign = 'center';
   ctx.fillStyle = '#64748b';
-  ctx.font = '700 22px monospace';
+  ctx.font = '700 20px monospace';
   ctx.letterSpacing = '3px';
-  ctx.fillText('◈ TRACKMETAROT ◈', 540, 1245);
+  ctx.fillText('◈ TRACKMETAROT ◈', 540, 1262);
 
   ctx.fillStyle = 'rgba(0, 255, 157, 0.85)';
-  ctx.font = '600 17px monospace';
+  ctx.font = '600 16px monospace';
   ctx.letterSpacing = '1px';
-  ctx.fillText('THE INTERNET ALREADY KNOWS YOU  //  TRACKMETAROT.VERCEL.APP', 540, 1280);
-
-  return canvas;
+  ctx.fillText('THE INTERNET ALREADY KNOWS YOU  //  TRACKMETAROT.VERCEL.APP', 540, 1294);
 
   return canvas;
 }
@@ -306,11 +385,13 @@ export function downloadTarotCardImage(canvas, filename = 'trackme-tarot.png') {
  * Generates formatted shareable text optimized for WhatsApp, LinkedIn, and Twitter
  */
 export function getShareableText(fortune, fingerprint, score) {
-  const archetypeTitle = fortune.archetype || fortune.title || 'The Digital Phantom';
+  const cards = fortune.cards || [];
+  const archetypeTitle = cards[0]?.archetype || fortune.archetype || fortune.title || 'The Digital Phantom';
   const exposureVal = score?.score ?? score?.value ?? 70;
+  const themeText = fortune.theme ? ` [${fortune.theme}]` : '';
   const shareUrl = window.location.origin;
 
-  return `The internet says I'm '${archetypeTitle}' with ${exposureVal}% exposure. Find yours → ${shareUrl}`;
+  return `The internet revealed my 3-card tarot spread${themeText}: ${archetypeTitle} with ${exposureVal}% exposure. Find yours → ${shareUrl}`;
 }
 
 /**
@@ -319,7 +400,7 @@ export function getShareableText(fortune, fingerprint, score) {
 export async function shareTarotReading({ fortune, fingerprint, score, canvas }) {
   const shareText = getShareableText(fortune, fingerprint, score);
   const shareUrl = window.location.origin;
-  const title = `TrackMe Tarot — ${fortune.archetype || fortune.title}`;
+  const title = `TrackMe Tarot — ${fortune.archetype || fortune.title || '3-Card Reading'}`;
 
   // Try Web Share API with image file if supported
   if (navigator.share) {
@@ -374,6 +455,28 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
     console.log('model:', fortune.model);
   }
 
+  // Standardize 3 cards
+  const cards = Array.isArray(fortune.cards) && fortune.cards.length === 3 ? fortune.cards : [
+    {
+      title: 'What the internet already knows',
+      archetype: fortune.archetype || 'The Digital Phantom',
+      reading: fortune.fortune || 'Stable telemetry vectors reveal your exact operating system and screen geometry.',
+      vibe_emoji: fortune.vibe_emoji || '🔮'
+    },
+    {
+      title: 'How exposed you are right now',
+      archetype: 'The Open Gateway',
+      reading: `Exposure Score: ${score?.score ?? 50}/100. Ambient signals broadcast your silicon silhouette.`,
+      vibe_emoji: '⚡'
+    },
+    {
+      title: 'What happens if you ignore this',
+      archetype: 'The Algorithmic Loop',
+      reading: fortune.prediction || 'You will open an empty browser tab tomorrow and forget your intention.',
+      vibe_emoji: '🌀'
+    }
+  ];
+
   // Feature 1 & 2 variables
   const gpuInfo = fingerprint.gpu || { display: fingerprint.gpuRenderer || 'hidden by your browser', isMasked: false };
   const gpuDisplay = gpuInfo.display || 'hidden by your browser';
@@ -401,7 +504,7 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   const latencyTag = fingerprint.latencyTag || (isLocalhost ? 'local test' : 'approximate');
   const latencyDisplay = fingerprint.latencyDisplay || (fingerprint.latency !== null && fingerprint.latency !== undefined ? `${fingerprint.latency} ms` : 'unavailable');
 
-  // Requirement 3 & 4: Output debug info when ?debug=1 is present
+  // Output debug info when ?debug=1 is present
   const isDebug = new URLSearchParams(window.location.search).get('debug') === '1';
   let debugHtml = '';
   if (isDebug) {
@@ -426,6 +529,93 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
       attempts: fortune.attempts || null
     });
   }
+
+  // 1. Three-Card Tarot Spread Triptych HTML (Interactive cards flipping in sequentially)
+  const spreadHtml = `
+    <div class="tarot-3card-spread-wrapper" aria-label="Three card spread result">
+      <div class="spread-banner-bar">
+        <div class="spread-banner-left">
+          <span class="spread-theme-badge">THEME: ${(fortune.theme || 'Destiny & device memory').toUpperCase()}</span>
+          <h3 class="spread-headline">THE THREE-CARD SPREAD</h3>
+        </div>
+        <div class="spread-banner-right">
+          ${oracleBadgeText}
+        </div>
+      </div>
+
+      <div class="tarot-cards-grid">
+        <!-- Card 1: Past -->
+        <article class="spread-card card-past" aria-label="Card 1: Past - ${cards[0].archetype}">
+          <div class="card-timeline-header">
+            <span class="card-timeline-num">I</span>
+            <span class="card-timeline-tag">PAST • THE KNOWN</span>
+          </div>
+          <div class="card-avatar-wrap">
+            <span class="card-avatar-emoji">${cards[0].vibe_emoji || '🔮'}</span>
+          </div>
+          <h4 class="card-archetype-title">${cards[0].archetype}</h4>
+          <div class="card-role-subtitle">${cards[0].title}</div>
+          <div class="card-reading-body">
+            <p class="card-reading-text">${cards[0].reading}</p>
+          </div>
+        </article>
+
+        <!-- Card 2: Present -->
+        <article class="spread-card card-present" aria-label="Card 2: Present - ${cards[1].archetype}">
+          <div class="card-timeline-header">
+            <span class="card-timeline-num">II</span>
+            <span class="card-timeline-tag">PRESENT • EXPOSURE</span>
+          </div>
+          <div class="card-avatar-wrap">
+            <span class="card-avatar-emoji">${cards[1].vibe_emoji || '⚡'}</span>
+          </div>
+          <h4 class="card-archetype-title">${cards[1].archetype}</h4>
+          <div class="card-role-subtitle">${cards[1].title}</div>
+          <div class="card-score-pill">Exposure Score: <strong>${score.score}/100</strong></div>
+          <div class="card-reading-body">
+            <p class="card-reading-text">${cards[1].reading}</p>
+          </div>
+        </article>
+
+        <!-- Card 3: Future -->
+        <article class="spread-card card-future" aria-label="Card 3: Future - ${cards[2].archetype}">
+          <div class="card-timeline-header">
+            <span class="card-timeline-num">III</span>
+            <span class="card-timeline-tag">FUTURE • PROPHECY</span>
+          </div>
+          <div class="card-avatar-wrap">
+            <span class="card-avatar-emoji">${cards[2].vibe_emoji || '🌀'}</span>
+          </div>
+          <h4 class="card-archetype-title">${cards[2].archetype}</h4>
+          <div class="card-role-subtitle">${cards[2].title}</div>
+          <div class="card-reading-body">
+            <p class="card-reading-text">${cards[2].reading}</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  `;
+
+  // Inject the spread into tarot-spread-container
+  const spreadContainer = document.getElementById('tarot-spread-container');
+  if (spreadContainer) {
+    spreadContainer.innerHTML = spreadHtml;
+  }
+
+  // 2. High-Res 1080x1350 Tarot Canvas Preview Card (Left Column)
+  const cardOnlyHtml = `
+    <article class="tarot-card-canvas-wrap" id="active-tarot-card" aria-label="Shareable 3-Card Tarot Card">
+      <div class="card-preview-header">
+        <span class="preview-tag">SHAREABLE 3-CARD TRIPTYCH</span>
+        <span class="preview-origin">${oracleBadgeText}</span>
+        <span class="preview-res">1080×1350 HD</span>
+      </div>
+      <div class="canvas-image-container">
+        <img class="tarot-canvas-img" src="${dataUrl}" alt="TrackMe Tarot 3-Card Spread - ${cards[0].archetype}, ${cards[1].archetype}, ${cards[2].archetype}" id="tarot-rendered-image" />
+      </div>
+    </article>
+    ${debugHtml}
+  `;
 
   // Fix-it cards from exposure tips
   const tipsArray = (fortune.exposure_tips || fortune.tips || [
@@ -456,21 +646,6 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   `).join('');
 
   const levelClass = (score.level || 'Medium').toLowerCase().replace(/\s+/g, '-');
-
-  // 1. High-Res 1080x1350 Tarot Canvas Preview Card (Left Column)
-  const cardOnlyHtml = `
-    <article class="tarot-card-canvas-wrap" id="active-tarot-card" aria-label="Tarot Card: ${fortune.archetype || fortune.title}">
-      <div class="card-preview-header">
-        <span class="preview-tag">ARCANUM ${fortune.numeral || 'XVIII'}</span>
-        <span class="preview-origin">${oracleBadgeText}</span>
-        <span class="preview-res">1080×1350 HD</span>
-      </div>
-      <div class="canvas-image-container">
-        <img class="tarot-canvas-img" src="${dataUrl}" alt="TrackMe Tarot Card - ${fortune.archetype || fortune.title}" id="tarot-rendered-image" />
-      </div>
-    </article>
-    ${debugHtml}
-  `;
 
   // 2. Exposure Score & Circular Gauge Section (Right Column)
   const dashboardHtml = `

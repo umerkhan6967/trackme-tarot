@@ -3156,6 +3156,326 @@ html, body {
   line-height: 1.35;
 }
 
+/* --------------------------------------------------------------------------
+   Theme Selector Section (Screen 1)
+   -------------------------------------------------------------------------- */
+.theme-selector-wrapper {
+  margin-top: 1.5rem;
+  width: 100%;
+  max-width: 580px;
+  background: rgba(10, 15, 28, 0.85);
+  border: 1px solid rgba(176, 38, 255, 0.4);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(176, 38, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  animation: fadeInDown 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.theme-prompt-badge {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--neon-green);
+  text-transform: uppercase;
+}
+
+.theme-selector-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0;
+}
+
+.theme-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 600px) {
+  .theme-buttons-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.theme-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  color: #e2e8f0;
+  transition: all 0.25s ease;
+  font-family: var(--font-mono);
+  outline: none;
+}
+
+.theme-btn:hover, .theme-btn:focus-visible {
+  background: rgba(176, 38, 255, 0.12);
+  border-color: var(--neon-violet-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 18px rgba(176, 38, 255, 0.35);
+  color: #fff;
+}
+
+.theme-btn:active {
+  transform: translateY(0);
+}
+
+.theme-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.theme-text {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+
+/* --------------------------------------------------------------------------
+   3-Card Tarot Spread Triptych (Screen 3)
+   -------------------------------------------------------------------------- */
+.tarot-spread-container {
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.tarot-3card-spread-wrapper {
+  background: rgba(6, 7, 11, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+}
+
+.spread-banner-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.85rem;
+}
+
+.spread-theme-badge {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--neon-green);
+  text-transform: uppercase;
+  background: rgba(0, 255, 157, 0.08);
+  border: 1px solid rgba(0, 255, 157, 0.3);
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.spread-headline {
+  font-family: var(--font-mystic);
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #fff;
+  margin: 0.3rem 0 0 0;
+}
+
+/* 3-Card Grid with 3D Perspective */
+.tarot-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  perspective: 1200px;
+}
+
+@media (max-width: 900px) {
+  .tarot-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* Staggered 3D Sequential Flip Animation */
+@keyframes cardSequentialFlip {
+  0% {
+    opacity: 0;
+    transform: translateY(35px) rotateY(-90deg) scale(0.95);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-6px) rotateY(8deg) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateY(0deg) scale(1);
+  }
+}
+
+.spread-card {
+  background: linear-gradient(180deg, rgba(16, 20, 36, 0.95), rgba(7, 9, 15, 0.98));
+  border-radius: var(--radius-md);
+  padding: 1.4rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  animation: cardSequentialFlip 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.spread-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Card 1: Past (delay 0.15s) */
+.spread-card.card-past {
+  border: 1px solid rgba(0, 255, 157, 0.45);
+  box-shadow: 0 8px 25px rgba(0, 255, 157, 0.12);
+  animation-delay: 0.15s;
+}
+.spread-card.card-past:hover {
+  border-color: var(--neon-green);
+  box-shadow: 0 12px 35px rgba(0, 255, 157, 0.25);
+}
+
+/* Card 2: Present (delay 0.45s) */
+.spread-card.card-present {
+  border: 1px solid rgba(176, 38, 255, 0.55);
+  box-shadow: 0 8px 25px rgba(176, 38, 255, 0.15);
+  animation-delay: 0.45s;
+}
+.spread-card.card-present:hover {
+  border-color: var(--neon-violet-bright);
+  box-shadow: 0 12px 35px rgba(176, 38, 255, 0.3);
+}
+
+/* Card 3: Future (delay 0.75s) */
+.spread-card.card-future {
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.12);
+  animation-delay: 0.75s;
+}
+.spread-card.card-future:hover {
+  border-color: #fbbf24;
+  box-shadow: 0 12px 35px rgba(245, 158, 11, 0.25);
+}
+
+.card-timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.5rem;
+}
+
+.card-timeline-num {
+  font-family: var(--font-mystic);
+  font-size: 1rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.card-timeline-tag {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.card-past .card-timeline-tag { color: var(--neon-green); }
+.card-present .card-timeline-tag { color: #c084fc; }
+.card-future .card-timeline-tag { color: #fbbf24; }
+
+.card-avatar-wrap {
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.card-avatar-emoji {
+  font-size: 3rem;
+  line-height: 1;
+  display: inline-block;
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.2));
+}
+
+.card-archetype-title {
+  font-family: var(--font-mystic);
+  font-size: 1.15rem;
+  font-weight: 900;
+  text-align: center;
+  color: #fff;
+  letter-spacing: 0.04em;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.card-role-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.card-score-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #c084fc;
+  background: rgba(176, 38, 255, 0.12);
+  border: 1px solid rgba(176, 38, 255, 0.3);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.card-reading-body {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 0.6rem;
+  flex-grow: 1;
+}
+
+.card-reading-text {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+/* Accessibility: prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .spread-card {
+    opacity: 1 !important;
+    animation: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .theme-selector-wrapper {
+    animation: none !important;
+  }
+}
+
+
 
 
 

@@ -126,9 +126,9 @@ function showTerminalError(errorMsg) {
 }
 
 /**
- * Executes the 4-second terminal scanning ritual
+ * Executes the 4-second terminal scanning ritual with selected theme
  */
-async function startScanningSequence() {
+async function startScanningSequence(selectedTheme = 'Destiny & device memory') {
   if (isScanning) return;
   isScanning = true;
 
@@ -141,22 +141,25 @@ async function startScanningSequence() {
   terminalBody.innerHTML = '';
   scanProgressBar.style.width = '0%';
   scanStepPercent.textContent = '0%';
-  scanStepLabel.textContent = 'INITIALIZING SENSORS...';
+  scanStepLabel.textContent = `INITIALIZING [${selectedTheme.toUpperCase()}] SENSORS...`;
 
   try {
     // Gather actual browser telemetry and start fortune generation concurrently
     const fpPromise = getBrowserFingerprint();
-    const fortunePromise = fpPromise.then((fp) => generateFortune(fp));
+    const fortunePromise = fpPromise.then((fp) => {
+      const score = calculateExposureScore(fp);
+      return generateFortune(fp, score, selectedTheme);
+    });
 
     // Sequence of realistic and eerie terminal events over ~4.0 seconds (4000ms)
     const sequence = [
-      { delay: 300, pct: 15, label: 'PROBING RUNTIME', text: 'reading device & hardware concurrency...', type: 'normal' },
+      { delay: 300, pct: 15, label: 'PROBING RUNTIME', text: `reading device & hardware concurrency for [${selectedTheme}]...`, type: 'normal' },
       { delay: 850, pct: 32, label: 'GEO_TEMPORAL LOCK', text: 'reading timezone, locale & system clocks...', type: 'mystic' },
       { delay: 1400, pct: 50, label: 'CANVAS INTERCEPT', text: 'reading WebGL GPU shaders & render pipeline...', type: 'normal' },
       { delay: 2000, pct: 68, label: 'VIEWPORT RECON', text: 'reading screen geometry, retina scale & color depth...', type: 'normal' },
       { delay: 2600, pct: 82, label: 'SUBSYSTEM PROBE', text: 'reading battery levels, touch points & font metrics...', type: 'mystic' },
       { delay: 3200, pct: 94, label: 'SYNTHESIZING MATRIX', text: 'calculating digital trackability score...', type: 'highlight' },
-      { delay: 3800, pct: 100, label: 'ARCANA MATERIALIZED', text: 'translating signals into cyber-tarot fortune...', type: 'highlight' }
+      { delay: 3800, pct: 100, label: 'ARCANA MATERIALIZED', text: 'translating signals into 3-card cyber-tarot spread...', type: 'highlight' }
     ];
 
     for (const step of sequence) {
@@ -172,7 +175,7 @@ async function startScanningSequence() {
     const score = calculateExposureScore(fingerprint);
     const fortune = await fortunePromise;
 
-    currentReading = { fingerprint, score, fortune };
+    currentReading = { fingerprint, score, fortune, theme: selectedTheme };
 
     // Brief pause before transitioning to result for dramatic tension
     await new Promise((res) => setTimeout(res, 450));
@@ -237,15 +240,30 @@ function showFeedback(msg = 'Copied to clipboard!') {
  * Wire event listeners
  */
 function initApp() {
+  const themeSelector = document.getElementById('theme-selector-wrapper');
+
   btnStart?.addEventListener('click', () => {
-    startScanningSequence();
+    btnStart.classList.add('hidden');
+    themeSelector?.classList.remove('hidden');
   });
 
-  // "Read again" action — reset flip animation
+  // Wire theme buttons
+  const themeButtons = document.querySelectorAll('.theme-btn');
+  themeButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const selectedTheme = btn.getAttribute('data-theme') || 'Destiny & device memory';
+      startScanningSequence(selectedTheme);
+    });
+  });
+
+  // "Read again" action — reset flip animation and return to landing
   btnRescan?.addEventListener('click', () => {
     cardContainer?.classList.remove('card-flip-in');
     const gaugeWrapper = document.querySelector('.gauge-svg-wrapper');
     gaugeWrapper?.classList.remove('gauge-pulse');
+    btnStart?.classList.remove('hidden');
+    themeSelector?.classList.add('hidden');
+    setButtonLoading(false);
     switchScreen(screenLanding);
   });
 

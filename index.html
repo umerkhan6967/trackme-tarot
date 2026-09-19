@@ -62,6 +62,26 @@
           <span class="btn-subtext">&gt; INITIATE TELEMETRY PROBE</span>
         </button>
 
+        <!-- Theme Selection (revealed after clicking "Read my fortune") -->
+        <div id="theme-selector-wrapper" class="theme-selector-wrapper hidden" aria-label="Select reading theme">
+          <div class="theme-prompt-badge">&gt; CHOOSE TELEMETRY VECTOR</div>
+          <p class="theme-selector-subtitle">Select a focus area for your 3-card spread:</p>
+          <div class="theme-buttons-grid">
+            <button class="theme-btn" data-theme="Love & algorithms" type="button">
+              <span class="theme-icon">💖</span>
+              <span class="theme-text">Love & algorithms</span>
+            </button>
+            <button class="theme-btn" data-theme="Career & cookies" type="button">
+              <span class="theme-icon">💼</span>
+              <span class="theme-text">Career & cookies</span>
+            </button>
+            <button class="theme-btn" data-theme="Destiny & device memory" type="button">
+              <span class="theme-icon">🔮</span>
+              <span class="theme-text">Destiny & device memory</span>
+            </button>
+          </div>
+        </div>
+
         <div class="disclaimer-note">
           <p>Readings are generated purely from live passive browser fingerprint signals.</p>
         </div>
@@ -104,6 +124,9 @@
           <div class="oracle-badge">&gt; ARCANUM COMPUTED</div>
           <h2 class="result-heading" aria-live="assertive">YOUR DIGITAL REVELATION</h2>
         </header>
+
+        <!-- 3-Card Tarot Spread Triptych Container -->
+        <div id="tarot-spread-container" class="tarot-spread-container" aria-label="Three card tarot spread"></div>
 
         <div class="result-grid">
           <!-- Left Column: Sticky Card + Action Buttons -->

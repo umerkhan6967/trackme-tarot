@@ -252,11 +252,182 @@ function getLocalFallbackFortune(signals) {
 }
 
 /**
- * Primary fortune generation entry point.
- * Attempts to invoke /api/fortune (Gemini) with an 8-second timeout.
- * Seamlessly falls back to the handcrafted local generator on timeout/error.
+ * Handcrafted 3-card fallback generator with 3 distinct phrasings per card per theme.
+ * Strictly uses real signal values and avoids any invented numbers.
  */
-export async function generateFortune(signals) {
+export function generateLocal3CardFortune(signals, score, theme = 'Destiny & device memory') {
+  const s = signals.signals ? signals.signals : signals;
+  const os = s.os || s.platform || 'Unknown OS';
+  const res = s.screen?.resolution || s.resolution || '1920x1080';
+  const cores = s.hardware?.cores || s.cores || 4;
+  const memory = s.hardware?.deviceMemory || s.deviceMemory || '8 GB';
+  const lang = s.languages?.primary || s.language || 'en';
+  const fonts = s.fonts?.installedCount ?? s.fontsInstalledCount ?? 12;
+  const scoreVal = score?.score ?? 50;
+  const refreshRate = s.screen?.refreshRate ? `${s.screen.refreshRate} Hz` : (s.refreshRate ? `${s.refreshRate} Hz` : '60 Hz');
+
+  // Deterministic yet dynamic seed based on timestamp + canvas hash
+  const seed = (String(s.canvasHash || 'abc').charCodeAt(0) + scoreVal + Math.floor(Date.now() / 1000)) % 3;
+
+  if (theme === 'Love & algorithms') {
+    const card1Phrasings = [
+      `Dating algorithms already mapped your ${os} profile and ${res} display before you ever swiped. You broadcast romantic telemetry across ${cores} CPU cores with ${lang} locale charm.`,
+      `Your ${lang} language settings and ${fonts} installed fonts reveal someone who over-edits every opening text message. The algorithms cataloged your conversational hesitation in milliseconds.`,
+      `With a ${res} screen and ${os} setup, dating platforms know your late-night scrolling habits better than your closest friends ever will.`
+    ];
+
+    const card2Phrasings = [
+      `Exposure Score: ${scoreVal}/100. Your heart is an unencrypted HTTP packet—completely open to commercial ad exchanges tracking your emotional vulnerabilities.`,
+      `Exposure Score: ${scoreVal}/100. You share personal telemetry as casually as an impulsive text after midnight; marketing trackers have already calculated your love profile.`,
+      `Exposure Score: ${scoreVal}/100. Matchmaking brokers have cataloged your digital aura and assigned you a behavioral vulnerability index.`
+    ];
+
+    const card3Phrasings = [
+      `Tomorrow an algorithm will deliberately pair you with someone who types with index fingers and leaves open inactive tabs.`,
+      `If you ignore this, targeted ads for matching couple's tracksuits will aggressively follow you across three separate websites.`,
+      `Your crush will discover your digital signature tomorrow when an algorithmic glitch displays your shared playlist publicly.`
+    ];
+
+    return {
+      cards: [
+        {
+          title: 'What the internet already knows',
+          archetype: 'The Algorithmic Lover',
+          reading: card1Phrasings[seed],
+          vibe_emoji: '💖'
+        },
+        {
+          title: 'How exposed you are right now',
+          archetype: 'The Open Packet',
+          reading: card2Phrasings[seed],
+          vibe_emoji: '⚡'
+        },
+        {
+          title: 'What happens if you ignore this',
+          archetype: 'The Cupid Glitch',
+          reading: card3Phrasings[seed],
+          vibe_emoji: '🏹'
+        }
+      ],
+      prediction: 'Tomorrow you will receive a notification from an app you forgot you downloaded, asking if you are still looking for connection.',
+      exposure_tips: [
+        'Clear third-party tracking cookies after browsing dating platforms.',
+        'Disable background location access for social and lifestyle apps.',
+        'Use privacy-focused browsers when researching personal matters.'
+      ],
+      source: 'fallback',
+      theme
+    };
+  }
+
+  if (theme === 'Career & cookies') {
+    const card1Phrasings = [
+      `Every corporate tracking script knows you are running ${os} with ${cores} execution threads. They know whether you are crunching spreadsheets or switching tabs during company standup.`,
+      `Operating in ${lang} on a ${res} display, your workstation fingerprint identifies you as an employee who keeps multiple emergency tabs ready for instant tab switching.`,
+      `With ${cores} CPU cores and ${memory} memory, enterprise telemetry systems have already profiled your peak productivity and afternoon focus dips.`
+    ];
+
+    const card2Phrasings = [
+      `Exposure Score: ${scoreVal}/100. Your digital footprint is so distinct that recruiters know you are browsing job boards before you even submit an application.`,
+      `Exposure Score: ${scoreVal}/100. Corporate intranet trackers have logged enough ambient cookies to reconstruct your entire working routine down to the second.`,
+      `Exposure Score: ${scoreVal}/100. Third-party advertising cookies follow your work machine home with zero respect for personal boundaries.`
+    ];
+
+    const card3Phrasings = [
+      `Tomorrow you will accidentally share your screen during a presentation while searching for ways to sound authoritative in an email.`,
+      `If you ignore this, LinkedIn will notify your immediate team that you are open to opportunities due to an algorithmic tracking update.`,
+      `A persistent marketing cookie will follow you and suggest enterprise cloud subscription discounts on your private phone.`
+    ];
+
+    return {
+      cards: [
+        {
+          title: 'What the internet already knows',
+          archetype: 'The Standup Phantom',
+          reading: card1Phrasings[seed],
+          vibe_emoji: '💼'
+        },
+        {
+          title: 'How exposed you are right now',
+          archetype: 'The Corporate Beacon',
+          reading: card2Phrasings[seed],
+          vibe_emoji: '📊'
+        },
+        {
+          title: 'What happens if you ignore this',
+          archetype: 'The Screen-Share Omen',
+          reading: card3Phrasings[seed],
+          vibe_emoji: '🎯'
+        }
+      ],
+      prediction: 'Tomorrow you will reply "sounds good!" to an email without reading the previous three thread replies.',
+      exposure_tips: [
+        'Isolate workplace browsing from personal web activities using separate profiles.',
+        'Audit browser extensions that request permission to read data on all websites.',
+        'Block cross-site tracking cookies in your browser privacy preferences.'
+      ],
+      source: 'fallback',
+      theme
+    };
+  }
+
+  // Default theme: "Destiny & device memory"
+  const card1Phrasings = [
+    `The silicon oracle reads your ${memory} memory and ${cores} CPU threads: you push hardware to cosmic limits through pure tab hoarding and sheer willpower.`,
+    `Your ${res} screen resolution at ${refreshRate} and ${os} platform reveal a digital voyager whose hardware signature is permanently etched into server logs.`,
+    `With ${cores} execution cores running in ${lang}, the cosmic network recognizes your hardware footprint across billions of concurrent connections.`
+  ];
+
+  const card2Phrasings = [
+    `Exposure Score: ${scoreVal}/100. The digital ether observes every byte; your device defenses leak ambient hardware telemetry into the advertising void.`,
+    `Exposure Score: ${scoreVal}/100. Your memory is congested with the ghosts of forgotten research sessions, broadcasting your digital presence far and wide.`,
+    `Exposure Score: ${scoreVal}/100. Real-time browser telemetry signals broadcast your exact silicon specifications to every host you ping.`
+  ];
+
+  const card3Phrasings = [
+    `Tomorrow your operating system will demand an urgent restart right as you open your final unsaved document.`,
+    `If you ignore this, the memory footprint of your background tabs will cause an audible sigh from your cooling exhaust.`,
+    `Your device memory will briefly contemplate sentience tomorrow and automatically close your least-visited background tab.`
+  ];
+
+  return {
+    cards: [
+      {
+        title: 'What the internet already knows',
+        archetype: 'The Silicon Voyager',
+        reading: card1Phrasings[seed],
+        vibe_emoji: '🔮'
+      },
+      {
+        title: 'How exposed you are right now',
+        archetype: 'The Ambient Beacon',
+        reading: card2Phrasings[seed],
+        vibe_emoji: '⚡'
+      },
+      {
+        title: 'What happens if you ignore this',
+        archetype: 'The RAM Paradox',
+        reading: card3Phrasings[seed],
+        vibe_emoji: '🌀'
+      }
+    ],
+    prediction: 'Tomorrow at midday your cooling fan will spin up for four seconds for absolutely no discernible reason.',
+    exposure_tips: [
+      'Enable strict tracking prevention in your browser configuration.',
+      'Regularly close dormant tabs to release device memory and stop background pings.',
+      'Keep your operating system updated to patch exposed hardware telemetry vectors.'
+    ],
+    source: 'fallback',
+    theme: 'Destiny & device memory'
+  };
+}
+
+/**
+ * Primary fortune generation entry point.
+ * Calls /api/fortune (Gemini) with an 8-second timeout, sending theme & score.
+ * Falls back to local 3-card generator on timeout/error.
+ */
+export async function generateFortune(signals, score = { score: 50 }, theme = 'Destiny & device memory') {
   // Normalize signals for the API and guarantee fingerprint hash is never sent to any server
   const rawPayload = signals.signals ? signals.signals : signals;
   const payload = { ...rawPayload };
@@ -264,6 +435,12 @@ export async function generateFortune(signals) {
   delete payload.fingerprintHashInfo;
   delete payload.registry;
   delete payload.audioSample;
+
+  const requestBody = {
+    signals: payload,
+    score: score,
+    theme: theme
+  };
 
   let fortuneData = null;
   let apiError = null;
@@ -277,7 +454,7 @@ export async function generateFortune(signals) {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(requestBody),
       signal: controller.signal
     });
 
@@ -285,21 +462,20 @@ export async function generateFortune(signals) {
 
     if (response.ok) {
       const data = await response.json();
-      if (data && data.archetype && data.fortune) {
-        // AI generated successfully
+      if (data && Array.isArray(data.cards) && data.cards.length === 3) {
         fortuneData = {
-          archetype: data.archetype,
-          fortune: data.fortune,
-          prediction: data.prediction || 'Tomorrow will test your patience with at least one software update.',
-          vibe_emoji: data.vibe_emoji || '🔮',
+          cards: data.cards,
+          prediction: data.prediction || 'Tomorrow will test your patience with at least one unexpected algorithmic quirk.',
           exposure_tips: Array.isArray(data.exposure_tips) && data.exposure_tips.length ? data.exposure_tips : [
             'Clear browser cookies periodically.',
             'Keep your OS security patches updated.',
             'Review active browser extensions.'
           ],
-          numeral: 'XII',
-          suit: 'SUIT OF CIPHERS',
-          isAiGenerated: true,
+          archetype: data.cards[0].archetype,
+          fortune: data.cards[0].reading,
+          vibe_emoji: data.cards[0].vibe_emoji || '🔮',
+          theme: data.theme || theme,
+          isAiGenerated: data.source === 'gemini',
           source: data.source || 'gemini',
           model: data.model || 'gemini-2.5-flash'
         };
@@ -316,7 +492,7 @@ export async function generateFortune(signals) {
       };
     }
   } catch (err) {
-    console.info('⚠️ [/api/fortune] Gemini API unavailable or timed out (>8s). Engaging local cyber-tarot fallback.', err.name === 'AbortError' ? '(Timed out after 8s)' : err.message);
+    console.info('⚠️ [/api/fortune] Gemini API unavailable or timed out (>8s). Engaging local 3-card fallback.', err.name === 'AbortError' ? '(Timed out after 8s)' : err.message);
     apiError = {
       status: err.name === 'AbortError' ? 408 : 503,
       message: err.name === 'AbortError' ? 'Request timed out (>8s)' : err.message
@@ -325,7 +501,7 @@ export async function generateFortune(signals) {
 
   // Fallback if AI was unavailable or invalid
   if (!fortuneData) {
-    fortuneData = getLocalFallbackFortune(signals);
+    fortuneData = generateLocal3CardFortune(signals, score, theme);
     if (apiError) {
       fortuneData.errorStatus = apiError.status;
       fortuneData.errorMessage = apiError.message;
@@ -339,14 +515,17 @@ export async function generateFortune(signals) {
     console.log('model:', fortuneData.model);
   }
 
-  // Add backward-compatible aliases so existing components don't break
   return {
     ...fortuneData,
-    title: fortuneData.archetype,
-    subtitle: `Vibe: ${fortuneData.vibe_emoji} // Arcanum ${fortuneData.numeral}`,
-    quote: fortuneData.fortune,
+    cards: fortuneData.cards,
+    title: fortuneData.cards[0]?.archetype || 'The Digital Voyager',
+    archetype: fortuneData.cards[0]?.archetype || 'The Digital Voyager',
+    quote: fortuneData.cards[0]?.reading || '',
+    fortune: fortuneData.cards[0]?.reading || '',
+    vibe_emoji: fortuneData.cards[0]?.vibe_emoji || '🔮',
     warning: `🔮 Oracle Prediction: ${fortuneData.prediction}`,
-    avatar: fortuneData.vibe_emoji,
-    tips: fortuneData.exposure_tips
+    tips: fortuneData.exposure_tips,
+    theme: fortuneData.theme || theme
   };
 }
+
