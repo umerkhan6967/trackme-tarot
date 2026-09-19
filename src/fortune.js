@@ -558,6 +558,7 @@ export async function generateFortune(signals, score = { score: 50 }, theme = 'D
                   'Keep your OS security patches updated.',
                   'Review active browser extensions.'
                 ],
+                fix_steps: Array.isArray(data.fix_steps) && data.fix_steps.length ? data.fix_steps : null,
                 archetype: data.cards[0].archetype,
                 fortune: data.cards[0].reading,
                 vibe_emoji: data.cards[0].vibe_emoji || '🔮',
@@ -610,6 +611,7 @@ export async function generateFortune(signals, score = { score: 50 }, theme = 'D
     vibe_emoji: fortuneData.cards[0]?.vibe_emoji || '🔮',
     warning: `🔮 Oracle Prediction: ${fortuneData.prediction}`,
     tips: fortuneData.exposure_tips,
+    fix_steps: fortuneData.fix_steps || null,
     theme: fortuneData.theme || theme,
     badge: fortuneData.badge || badge,
     rareCards: fortuneData.rareCards || rareCards,

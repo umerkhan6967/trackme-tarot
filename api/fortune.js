@@ -130,9 +130,20 @@ const fortuneResponseSchema = {
     exposure_tips: {
       type: 'ARRAY',
       items: { type: 'STRING' }
+    },
+    fix_steps: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          signal: { type: 'STRING' },
+          step: { type: 'STRING' }
+        },
+        required: ['signal', 'step']
+      }
     }
   },
-  required: ['cards', 'prediction', 'exposure_tips']
+  required: ['cards', 'prediction', 'exposure_tips', 'fix_steps']
 };
 
 /**
@@ -332,6 +343,13 @@ export default async function handler(req, res) {
   const badge = body.badge || signals.badge || null;
   const rareCards = Array.isArray(body.rareCards) ? body.rareCards : (Array.isArray(signals.rareCards) ? signals.rareCards : []);
 
+  // Browser name and version for personalised fix steps
+  const browserName = signals.browser?.name || body.browser?.name || 'unknown';
+  const browserVersion = signals.browser?.version || body.browser?.version || 'unknown';
+  const browserLabel = browserName !== 'unknown'
+    ? `${browserName}${browserVersion !== 'unknown' ? ` ${browserVersion.split('.')[0]}` : ''}`
+    : 'this browser';
+
   // Allowed numbers for digit validation
   const allowedNumbers = extractAllowedNumbers({ ...signals, badge, rareCards }, score);
 
@@ -395,12 +413,25 @@ CRITICAL RULES:
     }
   ],
   "prediction": "string (one absurd prediction for tomorrow)",
-  "exposure_tips": ["string", "string", "string"]
-}`;
+  "exposure_tips": ["string", "string", "string"],
+  "fix_steps": [
+    { "signal": "string (the signal name that raised the score, e.g. 'canvas fingerprint')", "step": "string (a concrete privacy fix in ${browserLabel}, max 25 words)" },
+    { "signal": "string", "step": "string" },
+    { "signal": "string", "step": "string" }
+  ]
+}
+
+For fix_steps: produce exactly 3 steps.
+- Each step must be a real, verifiable setting or action that exists in ${browserLabel}.
+- If you are not certain a specific menu path exists in ${browserLabel}, give a general browser-agnostic step instead of guessing menu names.
+- Each step must be at most 25 words.
+- Each signal field names the detected signal that caused the exposure (e.g. "canvas fingerprint", "installed fonts", "GPU renderer", "no ad-blocker", "Do Not Track disabled").
+- Prioritise the signals that contributed most points to the exposure score.`;
 
     const userPrompt = `Theme: ${theme}. Use only the facts provided.
 Here are the visitor's verified passive browser facts:
 - Exposure Score: ${score.score}/100
+- Browser: ${browserLabel}
 - Operating System: ${signals.os || signals.platform || 'Unknown'}
 - Screen Resolution: ${signals.screen?.resolution || signals.resolution || '1920x1080'}
 - Screen Colour Depth: ${signals.screen?.colorDepth || signals.colorDepth || '24-bit'}

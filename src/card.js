@@ -852,26 +852,150 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
     `;
   }
 
-  // Tab 2: Fix it (three fix cards, ensuring Fix 02 replaces "close dormant tabs")
-  const tipsRaw = fortune.exposure_tips || fortune.tips || [
-    'Enable strict tracking prevention in your browser configuration.',
-    'Use a browser or extension that blocks fingerprinting scripts.',
-    'Keep your operating system updated to patch exposed hardware telemetry vectors.'
-  ];
-  const tipsArray = tipsRaw.slice(0, 3).map((tip, idx) => {
-    if (idx === 1 || /dormant tabs/i.test(tip)) {
-      return 'Use a browser or extension that blocks fingerprinting scripts.';
-    }
-    return tip;
-  });
+  // Tab 2: Fix it — personalised steps from Gemini when available, static fallback otherwise
+  const detectedBrowserName = fingerprint.browser?.name || 'unknown';
+  const detectedBrowserMajor = (fingerprint.browser?.version || '').split('.')[0] || '';
+  const browserDisplayLabel = detectedBrowserName !== 'unknown'
+    ? `${detectedBrowserName}${detectedBrowserMajor ? ` ${detectedBrowserMajor}` : ''}`
+    : 'Your browser';
 
-  const fixItCardsHtml = tipsArray.map((tip, idx) => `
-    <div class="fix-it-card">
+  // Gemini-generated fix steps: { signal, step }[]
+  const aiFixSteps = Array.isArray(fortune.fix_steps) && fortune.fix_steps.length >= 3
+    ? fortune.fix_steps.slice(0, 3)
+    : null;
+
+  // Browser-specific static fallback steps mapped from score breakdown signals
+  function buildFallbackFixSteps(scoreBreakdown, bName) {
+    const b = (bName || 'unknown').toLowerCase();
+    const steps = [];
+
+    const signalMap = {
+      'Canvas Fingerprint Exposed': {
+        signal: 'canvas fingerprint',
+        chrome: 'Install a canvas-blocking extension such as Canvas Fingerprint Defender from the Chrome Web Store.',
+        firefox: 'In about:config set privacy.resistFingerprinting to true to randomise canvas output.',
+        safari: 'Safari limits canvas access automatically; keep Safari updated for the latest protections.',
+        edge: 'Install a canvas-blocking extension from the Microsoft Edge Add-ons store.',
+        default: 'Install a browser extension that randomises or blocks canvas fingerprinting.'
+      },
+      'Distinctive Font Matrix': {
+        signal: 'installed fonts',
+        chrome: 'Use a font-blocking or fingerprint-randomising extension to limit font enumeration.',
+        firefox: 'Enable privacy.resistFingerprinting in about:config; it limits font enumeration.',
+        safari: 'Safari restricts font access by default; no extra action needed.',
+        edge: 'Install a fingerprint-blocking extension from Edge Add-ons to limit font enumeration.',
+        default: 'Use a fingerprint-resistant browser mode or extension to limit font enumeration.'
+      },
+      'Font Inventory Profile': {
+        signal: 'font profile',
+        chrome: 'Use a fingerprint-randomising extension to reduce font enumeration surface.',
+        firefox: 'Enable privacy.resistFingerprinting in about:config to limit font detection.',
+        safari: 'Safari already limits font access; keep it updated.',
+        edge: 'Install a privacy extension from Edge Add-ons that limits font enumeration.',
+        default: 'Use a fingerprint-resistant browser mode or extension to reduce font exposure.'
+      },
+      'No Ad-Blocker Active': {
+        signal: 'no ad-blocker',
+        chrome: 'Install uBlock Origin from the Chrome Web Store to block tracking scripts and ads.',
+        firefox: 'Install uBlock Origin from addons.mozilla.org for comprehensive tracker blocking.',
+        safari: 'Install an ad-blocking content blocker from the App Store, such as 1Blocker or AdGuard.',
+        edge: 'Enable the built-in tracking prevention (Strict mode) in Edge Settings → Privacy.',
+        default: 'Install a reputable ad-blocker extension to prevent third-party tracking scripts from loading.'
+      },
+      'Live Battery Telemetry': {
+        signal: 'battery API',
+        chrome: 'Battery API is active; no Chrome setting disables it—use Firefox for stronger battery privacy.',
+        firefox: 'Firefox removed the Battery API; you are already protected.',
+        safari: 'Safari does not expose the Battery API to websites.',
+        edge: 'Battery API is active in Edge; consider using Firefox for stronger battery privacy.',
+        default: 'Switch to a browser that does not expose the Battery Status API (e.g., Firefox or Safari).'
+      },
+      'Do-Not-Track Disabled': {
+        signal: 'Do Not Track',
+        chrome: 'Enable Do-Not-Track in Chrome Settings → Privacy and security → Send a "Do Not Track" request.',
+        firefox: 'Enable Do-Not-Track in Firefox Settings → Privacy & Security → Send websites a "Do Not Track" signal.',
+        safari: 'Enable "Ask websites not to track me" in Safari Preferences → Privacy.',
+        edge: 'Enable Do-Not-Track in Edge Settings → Privacy, search, and services → Send "Do Not Track" requests.',
+        default: 'Enable the Do-Not-Track option in your browser privacy settings.'
+      },
+      'Precision Display Geometry': {
+        signal: 'screen resolution',
+        chrome: 'Use a fingerprint-randomising extension to report a normalised screen size.',
+        firefox: 'Enable privacy.resistFingerprinting in about:config; it rounds screen dimensions.',
+        safari: 'Safari rounds screen dimensions automatically on supported versions.',
+        edge: 'Use a privacy extension that normalises reported screen geometry.',
+        default: 'Use a fingerprint-resistant browser mode that normalises screen geometry.'
+      },
+      'High-Thread Concurrency': {
+        signal: 'CPU core count',
+        chrome: 'Use a fingerprint extension to limit or randomise the reported hardware concurrency value.',
+        firefox: 'Enable privacy.resistFingerprinting in about:config to cap the reported CPU core count.',
+        safari: 'Safari limits hardware concurrency reporting by default.',
+        edge: 'Use a privacy extension to limit the hardware concurrency value reported to websites.',
+        default: 'Enable fingerprint resistance in your browser to reduce CPU hardware exposure.'
+      },
+      'Standard Multi-Core CPU': {
+        signal: 'CPU core count',
+        chrome: 'Use a fingerprint extension to limit reported hardware concurrency.',
+        firefox: 'Enable privacy.resistFingerprinting in about:config to cap the reported core count.',
+        safari: 'Safari limits hardware concurrency reporting by default.',
+        edge: 'Use a privacy extension to limit the hardware concurrency reported to websites.',
+        default: 'Enable fingerprint resistance in your browser to reduce CPU hardware exposure.'
+      },
+      'WebGL GPU Pipeline': {
+        signal: 'GPU renderer',
+        chrome: 'Install a WebGL fingerprint blocker from the Chrome Web Store to mask your GPU details.',
+        firefox: 'Enable privacy.resistFingerprinting in about:config to randomise WebGL output.',
+        safari: 'Safari limits WebGL renderer info by default.',
+        edge: 'Install a WebGL privacy extension from Edge Add-ons to mask GPU details.',
+        default: 'Install a WebGL fingerprint blocker extension to mask your GPU renderer information.'
+      },
+      'Network Telemetry API': {
+        signal: 'network info',
+        chrome: 'Network Information API is active in Chrome; no built-in disable—use Firefox for stronger network privacy.',
+        firefox: 'Firefox does not expose the Network Information API to websites.',
+        safari: 'Safari does not expose the Network Information API.',
+        edge: 'Network Information API is active in Edge; switch to Firefox for stronger network privacy.',
+        default: 'Switch to a browser that does not expose the Network Information API (e.g., Firefox).'
+      }
+    };
+
+    const labels = (scoreBreakdown || []).map(item => item.label);
+    for (const label of labels) {
+      if (steps.length >= 3) break;
+      const entry = signalMap[label];
+      if (entry) {
+        const stepText = entry[b] || entry.default;
+        steps.push({ signal: entry.signal, step: stepText, isFallback: true });
+      }
+    }
+
+    // Pad to 3 with general fallbacks if needed
+    const generalFallbacks = [
+      { signal: 'tracking scripts', step: 'Install a reputable ad-blocker extension to block third-party tracking.', isFallback: true },
+      { signal: 'browser fingerprint', step: 'Enable your browser\'s strictest privacy or Enhanced Tracking Protection mode.', isFallback: true },
+      { signal: 'browser exposure', step: 'Keep your browser updated to receive the latest privacy patches.', isFallback: true }
+    ];
+    for (const fb of generalFallbacks) {
+      if (steps.length >= 3) break;
+      steps.push(fb);
+    }
+
+    return steps.slice(0, 3);
+  }
+
+  const fixStepsToShow = aiFixSteps || buildFallbackFixSteps(score.breakdown, detectedBrowserName);
+  const isPersonalised = Boolean(aiFixSteps) && fortune.source === 'gemini';
+
+  const stepIcons = ['🛡️', '🔒', '⚙️'];
+  const fixItCardsHtml = fixStepsToShow.map((item, idx) => `
+    <div class="fix-it-card${isPersonalised ? ' fix-it-card--ai' : ''}">
       <div class="fix-it-header">
         <span class="fix-it-badge">FIX 0${idx + 1}</span>
-        <span class="fix-it-icon">🛡️</span>
+        <span class="fix-it-icon">${stepIcons[idx] || '🛡️'}</span>
       </div>
-      <p class="fix-it-text">${tip}</p>
+      <div class="fix-it-signal-tag">Because your ${item.signal || 'browser signal'} is exposed</div>
+      <p class="fix-it-text">${item.step}</p>
     </div>
   `).join('');
 
@@ -881,7 +1005,12 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
       <div class="tab-panel-inner">
         <div class="tab-panel-header">
           <h4 class="tab-heading">MITIGATION PROTOCOLS</h4>
-          <p class="tab-sub">Actionable steps to minimize your passive browser footprint.</p>
+          <div class="fix-it-meta-row">
+            <p class="tab-sub">Steps specific to your detected browser and the signals that raised your score.</p>
+            <span class="fix-it-browser-badge">
+              ${isPersonalised ? `✦ AI-personalised for ${browserDisplayLabel}` : `${browserDisplayLabel} • general steps`}
+            </span>
+          </div>
         </div>
         <div class="fix-it-grid">
           ${fixItCardsHtml}

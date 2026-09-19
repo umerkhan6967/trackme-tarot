@@ -1850,6 +1850,15 @@ html, body {
   border-color: var(--neon-green);
 }
 
+.fix-it-card--ai {
+  border-color: rgba(167, 139, 250, 0.35);
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.06), rgba(0, 255, 157, 0.04));
+}
+
+.fix-it-card--ai:hover {
+  border-color: #a78bfa;
+}
+
 .fix-it-header {
   display: flex;
   justify-content: space-between;
@@ -1868,10 +1877,48 @@ html, body {
   font-size: 0.85rem;
 }
 
+/* Signal tag: "Because your [signal] is exposed" */
+.fix-it-signal-tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a78bfa;
+  margin-bottom: 0.3rem;
+  padding: 0.1rem 0.4rem;
+  background: rgba(167, 139, 250, 0.1);
+  border-radius: 4px;
+  display: inline-block;
+}
+
 .fix-it-text {
   font-size: 0.76rem;
   color: #e2e8f0;
   line-height: 1.4;
+  margin-top: 0.2rem;
+}
+
+/* Browser badge + meta row */
+.fix-it-meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.fix-it-browser-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--neon-green);
+  background: rgba(0, 255, 157, 0.08);
+  border: 1px solid rgba(0, 255, 157, 0.2);
+  border-radius: 20px;
+  padding: 0.2rem 0.6rem;
+  width: fit-content;
 }
 
 /* Privacy Guarantee Note */
