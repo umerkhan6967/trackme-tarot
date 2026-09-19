@@ -151,11 +151,192 @@ async function detectAdBlocker() {
 }
 
 /**
+ * 1. Refresh rate: average requestAnimationFrame interval over 60 frames,
+ * shown as Hz and marked "approximate".
+ */
+export function measureRefreshRate(targetFrames = 60) {
+  return new Promise((resolve) => {
+    if (typeof requestAnimationFrame === 'undefined') {
+      resolve({ hz: 60, display: '60 Hz', status: 'approximate' });
+      return;
+    }
+
+    let frames = 0;
+    let startTime = null;
+
+    function onFrame(now) {
+      if (startTime === null) {
+        startTime = now;
+        requestAnimationFrame(onFrame);
+        return;
+      }
+
+      frames++;
+      if (frames < targetFrames) {
+        requestAnimationFrame(onFrame);
+      } else {
+        const totalDuration = now - startTime;
+        const avgInterval = totalDuration / frames;
+        const hz = avgInterval > 0 ? Math.round(1000 / avgInterval) : 60;
+        resolve({
+          hz,
+          display: `${hz} Hz`,
+          avgIntervalMs: Number(avgInterval.toFixed(2)),
+          frames,
+          status: 'approximate'
+        });
+      }
+    }
+
+    requestAnimationFrame(onFrame);
+
+    // Timeout safety
+    setTimeout(() => {
+      if (frames < targetFrames) {
+        const totalTime = performance.now() - (startTime || performance.now());
+        const hz = frames > 5 ? Math.round(1000 / (totalTime / frames)) : 60;
+        resolve({
+          hz,
+          display: `${hz} Hz`,
+          frames,
+          status: 'approximate'
+        });
+      }
+    }, 1500);
+  });
+}
+
+/**
+ * 2. Colour depth (screen.colorDepth), HDR support (matchMedia "(dynamic-range: high)"),
+ * and colour gamut.
+ */
+export function readDisplayCapabilities() {
+  const colorDepth = (typeof window !== 'undefined' && window.screen?.colorDepth)
+    ? `${window.screen.colorDepth}-bit`
+    : '24-bit';
+
+  let isHdr = false;
+  let hdr = 'Unsupported';
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    isHdr = window.matchMedia('(dynamic-range: high)').matches;
+    hdr = isHdr ? 'Supported' : 'Unsupported';
+  }
+
+  let colorGamut = 'sRGB';
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    if (window.matchMedia('(color-gamut: rec2020)').matches) {
+      colorGamut = 'Rec. 2020';
+    } else if (window.matchMedia('(color-gamut: p3)').matches) {
+      colorGamut = 'Display P3';
+    } else if (window.matchMedia('(color-gamut: srgb)').matches) {
+      colorGamut = 'sRGB';
+    }
+  }
+
+  return {
+    colorDepth,
+    hdr,
+    isHdr,
+    colorGamut
+  };
+}
+
+/**
+ * 3. Global Privacy Control (navigator.globalPrivacyControl)
+ * Shown as on, off or unavailable.
+ */
+export function getGpcStatus() {
+  if (typeof navigator !== 'undefined') {
+    const val = navigator.globalPrivacyControl;
+    if (val === true || val === '1') return 'on';
+    if (val === false || val === '0') return 'off';
+  }
+  return 'unavailable';
+}
+
+/**
+ * 3. Do Not Track (navigator.doNotTrack)
+ * Shown as on, off or unavailable.
+ */
+export function getDntStatus() {
+  if (typeof navigator !== 'undefined') {
+    const val = navigator.doNotTrack ?? window.doNotTrack ?? navigator.msDoNotTrack;
+    if (val === '1' || val === true || val === 'yes') return 'on';
+    if (val === '0' || val === false || val === 'no') return 'off';
+  }
+  return 'unavailable';
+}
+
+/**
+ * 4. Latency: /api/ping.js returns 200 immediately.
+ * Measures round trip 5 times from client and returns median in ms,
+ * marked "approximate". On localhost, marked "local test".
+ */
+export async function measureLatency() {
+  const isLocalhost = Boolean(
+    typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '[::1]'
+    )
+  );
+
+  const roundTrips = [];
+  for (let i = 0; i < 5; i++) {
+    try {
+      const t0 = performance.now();
+      const res = await fetch(`/api/ping?_t=${Date.now()}_${i}`, { cache: 'no-store' });
+      const t1 = performance.now();
+      if (res.ok) {
+        roundTrips.push(t1 - t0);
+      }
+    } catch {
+      // Offline or network error
+    }
+  }
+
+  if (roundTrips.length === 0) {
+    return {
+      medianMs: null,
+      display: isLocalhost ? '0 ms' : 'unavailable',
+      tag: isLocalhost ? 'local test' : 'approximate',
+      isLocalhost,
+      status: 'approximate'
+    };
+  }
+
+  roundTrips.sort((a, b) => a - b);
+  const mid = Math.floor(roundTrips.length / 2);
+  const median = roundTrips.length % 2 !== 0
+    ? roundTrips[mid]
+    : (roundTrips[mid - 1] + roundTrips[mid]) / 2;
+  const medianMs = Math.round(median);
+
+  return {
+    medianMs,
+    display: `${medianMs} ms`,
+    tag: isLocalhost ? 'local test' : 'approximate',
+    isLocalhost,
+    status: 'approximate'
+  };
+}
+
+/**
  * Collects all passive browser telemetry signals.
  * Every single probe is protected by try/catch with fallback to 'unknown'.
  */
 export async function collectSignals() {
   const signals = {};
+
+  // Kick off async measurements concurrently (60-frame refresh rate & 5-ping latency)
+  const refreshPromise = measureRefreshRate(60).catch(() => ({ hz: 60, display: '60 Hz', status: 'approximate' }));
+  const latencyPromise = measureLatency().catch(() => ({
+    medianMs: null,
+    display: 'unavailable',
+    tag: 'approximate',
+    isLocalhost: false,
+    status: 'approximate'
+  }));
 
   // 1. Device Type & OS
   try {
@@ -230,20 +411,33 @@ export async function collectSignals() {
     signals.browser = { name: 'unknown', version: 'unknown' };
   }
 
-  // 3. Screen Resolution, Pixel Ratio, Viewport Size
+  // 3. Screen Resolution, Pixel Ratio, Viewport Size, Colour Depth, HDR, Colour Gamut
   try {
+    const displayCaps = readDisplayCapabilities();
     signals.screen = {
-      resolution: `${window.screen.width || 'unknown'}x${window.screen.height || 'unknown'}`,
+      resolution: `${window.screen?.width || 'unknown'}x${window.screen?.height || 'unknown'}`,
       pixelRatio: window.devicePixelRatio || 'unknown',
       viewport: `${window.innerWidth || 'unknown'}x${window.innerHeight || 'unknown'}`,
-      colorDepth: window.screen.colorDepth ? `${window.screen.colorDepth}-bit` : 'unknown'
+      colorDepth: displayCaps.colorDepth,
+      hdr: displayCaps.hdr,
+      isHdr: displayCaps.isHdr,
+      colorGamut: displayCaps.colorGamut,
+      refreshRate: 60,
+      refreshRateDisplay: '60 Hz',
+      refreshRateStatus: 'approximate'
     };
   } catch {
     signals.screen = {
       resolution: 'unknown',
       pixelRatio: 'unknown',
       viewport: 'unknown',
-      colorDepth: 'unknown'
+      colorDepth: '24-bit',
+      hdr: 'Unsupported',
+      isHdr: false,
+      colorGamut: 'sRGB',
+      refreshRate: 60,
+      refreshRateDisplay: '60 Hz',
+      refreshRateStatus: 'approximate'
     };
   }
 
@@ -366,21 +560,28 @@ export async function collectSignals() {
     signals.canvasHash = 'unknown';
   }
 
-  // 12. Cookies Enabled, Do Not Track, Ad Blocker Detection
+  // 12. Cookies Enabled, Do Not Track, Global Privacy Control, Ad Blocker Detection
   try {
     const cookiesEnabled = navigator.cookieEnabled ?? 'unknown';
-    const doNotTrack = (navigator.doNotTrack === '1' || window.doNotTrack === '1');
+    const doNotTrack = getDntStatus();
+    const globalPrivacyControl = getGpcStatus();
     const adBlockerDetected = await detectAdBlocker();
 
     signals.privacy = {
       cookiesEnabled,
       doNotTrack,
+      dnt: doNotTrack,
+      globalPrivacyControl,
+      gpc: globalPrivacyControl,
       adBlockerDetected
     };
   } catch {
     signals.privacy = {
       cookiesEnabled: 'unknown',
-      doNotTrack: 'unknown',
+      doNotTrack: 'unavailable',
+      dnt: 'unavailable',
+      globalPrivacyControl: 'unavailable',
+      gpc: 'unavailable',
       adBlockerDetected: 'unknown'
     };
   }
@@ -395,6 +596,31 @@ export async function collectSignals() {
     signals.plugins = {
       pluginCount: 'unknown',
       mimeTypeCount: 'unknown'
+    };
+  }
+
+  // 14. Await Concurrent Async Measurements (Refresh Rate & Ping Latency)
+  try {
+    const [refreshResult, latencyResult] = await Promise.all([refreshPromise, latencyPromise]);
+    if (signals.screen) {
+      signals.screen.refreshRate = refreshResult.hz || 60;
+      signals.screen.refreshRateDisplay = refreshResult.display || `${refreshResult.hz || 60} Hz`;
+      signals.screen.refreshRateStatus = refreshResult.status || 'approximate';
+    }
+    signals.network = {
+      latencyMs: latencyResult.medianMs,
+      latencyDisplay: latencyResult.display,
+      latencyTag: latencyResult.tag,
+      isLocalhost: latencyResult.isLocalhost,
+      status: latencyResult.status
+    };
+  } catch {
+    signals.network = {
+      latencyMs: null,
+      latencyDisplay: 'unavailable',
+      latencyTag: 'approximate',
+      isLocalhost: false,
+      status: 'approximate'
     };
   }
 
@@ -706,6 +932,62 @@ export function buildSignalsRegistry(signals, gpuInfo, fpHashInfo) {
       source: 'DOM ad-element probe & navigator.doNotTrack',
       note: 'Ad blocker detection and Do-Not-Track headers'
     },
+    refreshRate: {
+      value: signals.screen?.refreshRate ? `${signals.screen.refreshRate} Hz` : '60 Hz',
+      status: 'approximate',
+      source: 'requestAnimationFrame (60 frames)',
+      note: 'Average requestAnimationFrame interval over 60 frames'
+    },
+    colorDepth: {
+      value: signals.screen?.colorDepth || '24-bit',
+      status: 'read',
+      source: 'screen.colorDepth',
+      note: 'Display palette colour bit depth'
+    },
+    hdr: {
+      value: signals.screen?.hdr || 'Unsupported',
+      status: 'read',
+      source: 'matchMedia("(dynamic-range: high)")',
+      note: 'High Dynamic Range (HDR) display support'
+    },
+    colorGamut: {
+      value: signals.screen?.colorGamut || 'sRGB',
+      status: 'read',
+      source: 'matchMedia("(color-gamut: ...)")',
+      note: 'Supported display colour gamut space'
+    },
+    globalPrivacyControl: {
+      value: signals.privacy?.globalPrivacyControl || 'unavailable',
+      status: signals.privacy?.globalPrivacyControl !== 'unavailable' ? 'read' : 'unavailable',
+      source: 'navigator.globalPrivacyControl',
+      note: 'Global Privacy Control preference (on, off or unavailable)'
+    },
+    gpc: {
+      value: signals.privacy?.globalPrivacyControl || 'unavailable',
+      status: signals.privacy?.globalPrivacyControl !== 'unavailable' ? 'read' : 'unavailable',
+      source: 'navigator.globalPrivacyControl',
+      note: 'GPC signal status (on, off or unavailable)'
+    },
+    doNotTrack: {
+      value: signals.privacy?.doNotTrack || 'unavailable',
+      status: signals.privacy?.doNotTrack !== 'unavailable' ? 'read' : 'unavailable',
+      source: 'navigator.doNotTrack',
+      note: 'Do Not Track header preference (on, off or unavailable)'
+    },
+    dnt: {
+      value: signals.privacy?.doNotTrack || 'unavailable',
+      status: signals.privacy?.doNotTrack !== 'unavailable' ? 'read' : 'unavailable',
+      source: 'navigator.doNotTrack',
+      note: 'DNT signal status (on, off or unavailable)'
+    },
+    latency: {
+      value: signals.network?.latencyMs !== null && signals.network?.latencyMs !== undefined
+        ? `${signals.network.latencyMs} ms`
+        : (signals.network?.latencyDisplay || 'unavailable'),
+      status: 'approximate',
+      source: '/api/ping (5-sample round-trip median)',
+      note: signals.network?.isLocalhost ? 'local test' : 'approximate'
+    },
     behaviour: {
       value: null,
       status: 'unavailable',
@@ -769,11 +1051,23 @@ export async function getBrowserFingerprint() {
     deviceMemory: signals.hardware.deviceMemory !== 'unknown' ? signals.hardware.deviceMemory : 'Standard (<=4GB)',
     resolution: signals.screen.resolution,
     colorDepth: signals.screen.colorDepth,
+    hdr: signals.screen.hdr,
+    isHdr: signals.screen.isHdr,
+    colorGamut: signals.screen.colorGamut,
+    refreshRate: signals.screen.refreshRate,
+    refreshRateDisplay: signals.screen.refreshRateDisplay,
+    refreshRateStatus: 'approximate',
+    globalPrivacyControl: signals.privacy.globalPrivacyControl,
+    gpc: signals.privacy.globalPrivacyControl,
+    doNotTrack: signals.privacy.doNotTrack,
+    dnt: signals.privacy.dnt,
+    latency: signals.network?.latencyMs ?? null,
+    latencyDisplay: signals.network?.latencyDisplay || 'unavailable',
+    latencyTag: signals.network?.latencyTag || 'approximate',
     pixelRatio: signals.screen.pixelRatio,
     viewport: signals.screen.viewport,
     batteryStatus: signals.battery !== 'unsupported' ? signals.battery : null,
     connectionType: signals.connection !== 'unsupported' ? signals.connection.effectiveType : 'broadband',
-    doNotTrack: signals.privacy.doNotTrack === true,
     adBlockerDetected: signals.privacy.adBlockerDetected,
     canvasHash: signals.canvasHash,
     fontsInstalledCount: signals.fonts?.installedCount ?? 0,

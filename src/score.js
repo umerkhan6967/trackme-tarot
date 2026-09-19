@@ -83,7 +83,8 @@ export function calculateExposureScore(data) {
 
   // 5. Do Not Track (DNT) Header (+7)
   const dnt = signals.privacy?.doNotTrack ?? data?.doNotTrack;
-  if (dnt !== true) {
+  const isDntEnabled = dnt === true || dnt === 'on';
+  if (!isDntEnabled) {
     const points = 7;
     totalScore += points;
     breakdown.push({

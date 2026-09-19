@@ -384,6 +384,23 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
     console.log('[SIGNALS REGISTRY]', fingerprint.registry);
   }
 
+  // Real signals for the "Signals we read" panel
+  const refreshRateDisplay = fingerprint.refreshRateDisplay || `${fingerprint.refreshRate || 60} Hz`;
+  const colorDepthDisplay = fingerprint.colorDepth || (window.screen?.colorDepth ? `${window.screen.colorDepth}-bit` : '24-bit');
+  const hdrDisplay = fingerprint.hdr || (window.matchMedia?.('(dynamic-range: high)').matches ? 'Supported' : 'Unsupported');
+  const gamutDisplay = fingerprint.colorGamut || 'sRGB';
+  const gpcStatus = fingerprint.gpc || fingerprint.globalPrivacyControl || 'unavailable';
+  const dntStatus = fingerprint.dnt || fingerprint.doNotTrack || 'unavailable';
+  const isLocalhost = Boolean(
+    typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '[::1]'
+    )
+  );
+  const latencyTag = fingerprint.latencyTag || (isLocalhost ? 'local test' : 'approximate');
+  const latencyDisplay = fingerprint.latencyDisplay || (fingerprint.latency !== null && fingerprint.latency !== undefined ? `${fingerprint.latency} ms` : 'unavailable');
+
   // Requirement 3 & 4: Output debug info when ?debug=1 is present
   const isDebug = new URLSearchParams(window.location.search).get('debug') === '1';
   let debugHtml = '';
@@ -607,6 +624,78 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
             <button id="btn-retry-behaviour" class="cyber-btn text-link retry-behaviour-btn" type="button">
               ↺ Test again
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signals we read Panel -->
+      <div class="signals-we-read-container" id="signals-we-read-panel" aria-label="Signals we read">
+        <div class="signals-panel-header">
+          <div class="signals-header-left">
+            <span class="signals-panel-badge">&gt; PASSIVE AUDIT</span>
+            <h4 class="signals-panel-title">Signals we read</h4>
+          </div>
+          <span class="signals-panel-meta">BROWSER EXPOSURE SPECTRUM</span>
+        </div>
+        <p class="signals-panel-sub">
+          Real environmental and configuration signals queried directly by scripts without prompting for user permission.
+        </p>
+
+        <div class="signals-read-grid">
+          <!-- Signal 1: Refresh rate -->
+          <div class="signal-read-card" aria-label="Refresh rate">
+            <div class="signal-read-top">
+              <span class="signal-read-name">Refresh rate</span>
+              <span class="signal-read-badge approximate">approximate</span>
+            </div>
+            <div class="signal-read-value" id="signal-val-refresh-rate">${refreshRateDisplay}</div>
+            <div class="signal-read-source">Average requestAnimationFrame interval over 60 frames</div>
+          </div>
+
+          <!-- Signal 2: Colour depth, HDR support & colour gamut -->
+          <div class="signal-read-card" aria-label="Colour and Display capabilities">
+            <div class="signal-read-top">
+              <span class="signal-read-name">Colour & Display</span>
+              <span class="signal-read-badge read">read</span>
+            </div>
+            <div class="signal-read-value display-caps-value">
+              <span class="color-depth-item">${colorDepthDisplay}</span>
+              <span class="caps-sep">•</span>
+              <span class="hdr-item">${hdrDisplay}</span>
+              <span class="caps-sep">•</span>
+              <span class="gamut-item">${gamutDisplay}</span>
+            </div>
+            <div class="signal-read-source">screen.colorDepth, matchMedia (dynamic-range: high), colour gamut</div>
+          </div>
+
+          <!-- Signal 3a: Global Privacy Control -->
+          <div class="signal-read-card" aria-label="Global Privacy Control">
+            <div class="signal-read-top">
+              <span class="signal-read-name">Global Privacy Control</span>
+              <span class="signal-read-badge ${gpcStatus}">${gpcStatus}</span>
+            </div>
+            <div class="signal-read-value status-${gpcStatus}">${gpcStatus}</div>
+            <div class="signal-read-source">navigator.globalPrivacyControl (${gpcStatus})</div>
+          </div>
+
+          <!-- Signal 3b: Do Not Track -->
+          <div class="signal-read-card" aria-label="Do Not Track">
+            <div class="signal-read-top">
+              <span class="signal-read-name">Do Not Track</span>
+              <span class="signal-read-badge ${dntStatus}">${dntStatus}</span>
+            </div>
+            <div class="signal-read-value status-${dntStatus}">${dntStatus}</div>
+            <div class="signal-read-source">navigator.doNotTrack (${dntStatus})</div>
+          </div>
+
+          <!-- Signal 4: Latency -->
+          <div class="signal-read-card" aria-label="Round-trip latency">
+            <div class="signal-read-top">
+              <span class="signal-read-name">Latency</span>
+              <span class="signal-read-badge ${latencyTag === 'local test' ? 'local-test' : 'approximate'}">${latencyTag}</span>
+            </div>
+            <div class="signal-read-value" id="signal-val-latency">${latencyDisplay}</div>
+            <div class="signal-read-source">5-sample median round-trip to /api/ping (${latencyTag})</div>
           </div>
         </div>
       </div>
