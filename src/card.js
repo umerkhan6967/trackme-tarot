@@ -542,27 +542,42 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   const isDebug = new URLSearchParams(window.location.search).get('debug') === '1';
   let debugHtml = '';
   if (isDebug) {
+    const displayStatus = fortune.httpStatus || (isGemini ? 200 : (fortune.errorStatus || 500));
+    const displayModel = fortune.model || 'gemini-2.5-flash';
+    const displayResponseTime = fortune.responseTimeMs !== undefined ? `${fortune.responseTimeMs} ms` : 'n/a';
+    const fallbackReasonText = fortune.fallbackReason || fortune.errorMessage || (isGemini ? null : 'network error');
+
     debugHtml = `
       <aside class="debug-panel" aria-label="Debug Telemetry Info">
         <div class="debug-header">
           <span>&gt; DEBUG CONSOLE (?debug=1)</span>
-          <span>HTTP ${fortune.errorStatus || (isGemini ? 200 : 503)}</span>
+          <span>HTTP ${displayStatus}</span>
         </div>
+        <div class="debug-row">HTTP Status: <strong style="color: ${displayStatus === 200 ? 'var(--neon-green)' : '#ff4757'};">${displayStatus}</strong></div>
+        <div class="debug-row">Model Used: <strong style="color: #38bdf8;">${displayModel}</strong></div>
+        <div class="debug-row">Response Time: <strong style="color: #a78bfa;">${displayResponseTime}</strong></div>
         <div class="debug-row">Mode: <strong style="color: ${isGemini ? 'var(--neon-green)' : '#f59e0b'};">${isGemini ? 'Live Gemini AI' : 'Offline Fallback'}</strong></div>
         <div class="debug-row">Source: <code>${fortune.source || 'fallback'}</code></div>
-        ${fortune.model ? `<div class="debug-row">Model: <strong style="color: #38bdf8;">${fortune.model}</strong></div>` : ''}
-        ${!isGemini && fortune.validationFailureReason ? `<div class="debug-row alert" style="color: #fbbf24;">Validation Failure: <code>${fortune.validationFailureReason}</code></div>` : ''}
-        ${!isGemini && fortune.errorMessage ? `<div class="debug-row alert" style="color: #ff4757;">Offline Reason: <code>[${fortune.errorStatus || 503}] ${fortune.errorMessage}</code></div>` : ''}
-        ${fortune.attempts?.length ? `<div class="debug-row attempts" style="font-size: 0.68rem; color: var(--text-muted);">Attempts Tried: ${fortune.attempts.map(a => `${a.model} (att ${a.attempt}: ${a.status || 'err'})`).join(', ')}</div>` : ''}
+        ${!isGemini && fallbackReasonText ? `
+          <div class="debug-row alert" style="color: #ff4757; font-weight: 600;">
+            Fallback Reason: <code style="color: #fca5a5;">${fallbackReasonText}</code>
+          </div>
+        ` : ''}
       </aside>
     `;
+
+    if (!isGemini && fallbackReasonText) {
+      console.error(`[Fallback] HTTP ${displayStatus} | Model: ${displayModel} | Time: ${displayResponseTime} | Reason: ${fallbackReasonText}`);
+      console.error(fallbackReasonText);
+    }
+
     console.log('[DEBUG 1 OUTPUT]', {
+      httpStatus: displayStatus,
+      model: displayModel,
+      responseTimeMs: fortune.responseTimeMs,
       source: fortune.source,
-      model: fortune.model || null,
-      errorStatus: fortune.errorStatus || null,
-      validationFailureReason: fortune.validationFailureReason || null,
-      errorMessage: fortune.errorMessage || null,
-      attempts: fortune.attempts || null
+      fallbackReason: fallbackReasonText,
+      isGemini
     });
   }
 

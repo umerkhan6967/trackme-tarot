@@ -422,10 +422,40 @@ export function generateLocal3CardFortune(signals, score, theme = 'Destiny & dev
   };
 }
 
+const BANNED_WORDS = ['tabs', 'history', 'ip address', 'your location', 'reddit'];
+
+function findClientBannedWord(text) {
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  for (const word of BANNED_WORDS) {
+    const regex = new RegExp(`(^|[^a-z0-9])${word}([^a-z0-9]|$)`, 'i');
+    if (regex.test(lower)) {
+      return word;
+    }
+  }
+  return null;
+}
+
+function checkClientSchemaMismatch(data) {
+  if (!data || typeof data !== 'object') return 'root object';
+  if (!Array.isArray(data.cards) || data.cards.length !== 3) return 'cards[3]';
+  for (let i = 0; i < 3; i++) {
+    const c = data.cards[i];
+    if (!c || typeof c !== 'object') return `cards[${i}]`;
+    if (!c.title) return `cards[${i}].title`;
+    if (!c.archetype) return `cards[${i}].archetype`;
+    if (!c.reading) return `cards[${i}].reading`;
+    if (!c.vibe_emoji) return `cards[${i}].vibe_emoji`;
+  }
+  if (typeof data.prediction !== 'string' || !data.prediction.trim()) return 'prediction';
+  if (!Array.isArray(data.exposure_tips) || data.exposure_tips.length === 0) return 'exposure_tips';
+  return null;
+}
+
 /**
  * Primary fortune generation entry point.
- * Calls /api/fortune (Gemini) with an 8-second timeout, sending theme & score.
- * Falls back to local 3-card generator on timeout/error.
+ * Calls /api/fortune (Gemini) with a 20-second timeout, sending theme & score.
+ * Falls back to local 3-card generator on timeout/error with categorized reason.
  */
 export async function generateFortune(signals, score = { score: 50 }, theme = 'Destiny & device memory') {
   // Normalize signals for the API and guarantee fingerprint hash is never sent to any server
@@ -448,70 +478,120 @@ export async function generateFortune(signals, score = { score: 50 }, theme = 'D
   };
 
   let fortuneData = null;
-  let apiError = null;
+  let httpStatus = null;
+  let modelUsed = 'gemini-2.5-flash';
+  let fallbackReason = null;
+  const requestStartTime = performance.now();
+  let responseTimeMs = 0;
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20-second client timeout
 
-    const response = await fetch('/api/fortune', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody),
-      signal: controller.signal
-    });
+    let response;
+    try {
+      response = await fetch('/api/fortune', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      });
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      responseTimeMs = Math.round(performance.now() - requestStartTime);
+      if (fetchErr.name === 'AbortError') {
+        fallbackReason = 'timeout';
+        httpStatus = 408;
+      } else {
+        fallbackReason = 'network error';
+        httpStatus = 0;
+      }
+      throw fetchErr;
+    }
 
     clearTimeout(timeoutId);
+    responseTimeMs = Math.round(performance.now() - requestStartTime);
+    httpStatus = response.status;
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data && Array.isArray(data.cards) && data.cards.length === 3) {
-        fortuneData = {
-          cards: data.cards,
-          prediction: data.prediction || 'Tomorrow will test your patience with at least one unexpected algorithmic quirk.',
-          exposure_tips: Array.isArray(data.exposure_tips) && data.exposure_tips.length ? data.exposure_tips : [
-            'Clear browser cookies periodically.',
-            'Keep your OS security patches updated.',
-            'Review active browser extensions.'
-          ],
-          archetype: data.cards[0].archetype,
-          fortune: data.cards[0].reading,
-          vibe_emoji: data.cards[0].vibe_emoji || '🔮',
-          theme: data.theme || theme,
-          isAiGenerated: data.source === 'gemini',
-          source: data.source || 'gemini',
-          model: data.model || 'gemini-2.5-flash'
-        };
-      }
-    } else {
+    if (!response.ok) {
       const errJson = await response.json().catch(() => null);
-      const errMsg = errJson?.error || `HTTP ${response.status}`;
-      console.warn(`⚠️ [/api/fortune] API returned error status ${response.status}:`, errMsg);
-      apiError = {
-        status: response.status,
-        message: errMsg,
-        details: errJson?.details,
-        attempts: errJson?.attempts
-      };
+      const errMsg = errJson?.error || errJson?.message || response.statusText || `Status ${response.status}`;
+      fallbackReason = `HTTP error with message: ${errMsg}`;
+      modelUsed = errJson?.model || modelUsed;
+    } else {
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        fallbackReason = 'invalid JSON';
+      }
+
+      if (data) {
+        modelUsed = data.model || modelUsed;
+
+        if (data.source === 'fallback') {
+          // Server fell back
+          fallbackReason = data.fallbackReason || (data.errorMessage ? `HTTP error with message: ${data.errorMessage}` : 'HTTP error with message: unknown server fallback');
+        } else {
+          // Client schema check (accept if fields exist)
+          const missingField = checkClientSchemaMismatch(data);
+          if (missingField) {
+            fallbackReason = `schema mismatch with the missing field: ${missingField}`;
+          } else {
+            // Client banned words check
+            const allText = [
+              ...data.cards.map(c => `${c.title} ${c.archetype} ${c.reading}`),
+              data.prediction,
+              ...(data.exposure_tips || [])
+            ].join(' ');
+            const bannedWord = findClientBannedWord(allText);
+            if (bannedWord) {
+              fallbackReason = `validation rejected with the rule: banned_words and the offending text: "${bannedWord}"`;
+            } else {
+              fortuneData = {
+                cards: data.cards,
+                prediction: data.prediction,
+                exposure_tips: Array.isArray(data.exposure_tips) && data.exposure_tips.length ? data.exposure_tips : [
+                  'Clear browser cookies periodically.',
+                  'Keep your OS security patches updated.',
+                  'Review active browser extensions.'
+                ],
+                archetype: data.cards[0].archetype,
+                fortune: data.cards[0].reading,
+                vibe_emoji: data.cards[0].vibe_emoji || '🔮',
+                theme: data.theme || theme,
+                isAiGenerated: true,
+                source: 'gemini',
+                model: modelUsed,
+                httpStatus,
+                responseTimeMs
+              };
+            }
+          }
+        }
+      }
     }
   } catch (err) {
-    console.info('⚠️ [/api/fortune] Gemini API unavailable or timed out (>8s). Engaging local 3-card fallback.', err.name === 'AbortError' ? '(Timed out after 8s)' : err.message);
-    apiError = {
-      status: err.name === 'AbortError' ? 408 : 503,
-      message: err.name === 'AbortError' ? 'Request timed out (>8s)' : err.message
-    };
+    if (!fallbackReason) {
+      fallbackReason = err.name === 'AbortError' ? 'timeout' : 'network error';
+    }
   }
 
-  // Fallback if AI was unavailable or invalid
+  // If fallback occurred, generate local 3-card fortune and log error
   if (!fortuneData) {
+    if (!fallbackReason) fallbackReason = 'network error';
+    console.error(`[Fallback] Reason: ${fallbackReason} | Status: ${httpStatus} | Model: ${modelUsed} | Response Time: ${responseTimeMs}ms`);
+    console.error(fallbackReason);
+
     fortuneData = generateLocal3CardFortune(signals, score, theme);
-    if (apiError) {
-      fortuneData.errorStatus = apiError.status;
-      fortuneData.errorMessage = apiError.message;
-      fortuneData.attempts = apiError.attempts;
-    }
+    fortuneData.source = 'fallback';
+    fortuneData.isAiGenerated = false;
+    fortuneData.fallbackReason = fallbackReason;
+    fortuneData.httpStatus = httpStatus;
+    fortuneData.model = modelUsed;
+    fortuneData.responseTimeMs = responseTimeMs;
   }
 
   // Console.log the source as requested
@@ -532,7 +612,11 @@ export async function generateFortune(signals, score = { score: 50 }, theme = 'D
     tips: fortuneData.exposure_tips,
     theme: fortuneData.theme || theme,
     badge: fortuneData.badge || badge,
-    rareCards: fortuneData.rareCards || rareCards
+    rareCards: fortuneData.rareCards || rareCards,
+    httpStatus: fortuneData.httpStatus || httpStatus,
+    model: fortuneData.model || modelUsed,
+    responseTimeMs: fortuneData.responseTimeMs !== undefined ? fortuneData.responseTimeMs : responseTimeMs,
+    fallbackReason: fortuneData.fallbackReason || null
   };
 }
 
