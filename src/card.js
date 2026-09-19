@@ -9,6 +9,7 @@
  */
 
 import { generateAllStorySlides, downloadStorySlides, shareStorySlides } from './storySlides.js';
+import { generateCardArtDataUrl } from './cardArtFallback.js';
 export { generateAllStorySlides, downloadStorySlides, shareStorySlides };
 
 /**
@@ -58,7 +59,7 @@ function roundRect(ctx, x, y, width, height, radius) {
 /**
  * Generates the full 1080x1350 Tarot Card Canvas
  */
-export function generateTarotCardCanvas({ fortune, fingerprint, score }) {
+export function generateTarotCardCanvas({ fortune, fingerprint, score, cardArtImage }) {
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1350;
@@ -281,37 +282,99 @@ export function generateTarotCardCanvas({ fortune, fingerprint, score }) {
     ctx.letterSpacing = '1.5px';
     ctx.fillText(cfg.subrole, colX + colW / 2, spreadY + 45);
 
-    // Card Emoji
-    ctx.font = '48px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
-    ctx.shadowColor = cfg.glowColor;
-    ctx.shadowBlur = 16;
-    ctx.fillText(card.vibe_emoji || '🔮', colX + colW / 2, spreadY + 104);
-    ctx.shadowBlur = 0;
+    const hasArt = (idx === 0 && cardArtImage && typeof ctx.drawImage === 'function' && (cardArtImage.complete || cardArtImage.naturalWidth || cardArtImage.width));
 
-    // Archetype Title
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '700 17px "Cinzel", serif, sans-serif';
-    const archName = (card.archetype || 'The Voyager').toUpperCase();
-    wrapText(ctx, archName, colX + colW / 2, spreadY + 140, colW - 24, 22, true);
+    if (hasArt) {
+      const artW = colW - 28;
+      const artH = 115;
+      const artX = colX + 14;
+      const artY = spreadY + 54;
 
-    // Inner divider
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.beginPath();
-    ctx.moveTo(colX + 24, spreadY + 185);
-    ctx.lineTo(colX + colW - 24, spreadY + 185);
-    ctx.stroke();
+      ctx.strokeStyle = cfg.borderColor;
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, artX, artY, artW, artH, 8);
+      ctx.stroke();
 
-    // Role Subtitle
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '600 11px monospace';
-    const subTitle = (card.title || '').toUpperCase();
-    wrapText(ctx, subTitle, colX + colW / 2, spreadY + 208, colW - 28, 16, true);
+      if (typeof ctx.save === 'function' && typeof ctx.clip === 'function') {
+        ctx.save();
+        ctx.beginPath();
+        roundRect(ctx, artX + 1, artY + 1, artW - 2, artH - 2, 7);
+        ctx.clip();
+        ctx.drawImage(cardArtImage, artX + 1, artY + 1, artW - 2, artH - 2);
+        ctx.restore();
+      } else {
+        ctx.drawImage(cardArtImage, artX + 1, artY + 1, artW - 2, artH - 2);
+      }
 
-    // Reading Text
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = '14px "JetBrains Mono", monospace';
-    ctx.textAlign = 'left';
-    wrapText(ctx, card.reading || '', colX + 16, spreadY + 252, colW - 32, 22, false);
+      // Small AI Art Badge
+      ctx.fillStyle = 'rgba(6, 8, 14, 0.85)';
+      roundRect(ctx, artX + 6, artY + 6, 110, 20, 4);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0, 255, 157, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#00ff9d';
+      ctx.font = '700 9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('✦ AI ART', artX + 6 + 55, artY + 19);
+
+      // Archetype Title
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 16px "Cinzel", serif, sans-serif';
+      const archName = (card.archetype || 'The Voyager').toUpperCase();
+      wrapText(ctx, archName, colX + colW / 2, spreadY + 188, colW - 24, 20, true);
+
+      // Inner divider
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.moveTo(colX + 24, spreadY + 214);
+      ctx.lineTo(colX + colW - 24, spreadY + 214);
+      ctx.stroke();
+
+      // Role Subtitle
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '600 11px monospace';
+      const subTitle = (card.title || '').toUpperCase();
+      wrapText(ctx, subTitle, colX + colW / 2, spreadY + 232, colW - 28, 16, true);
+
+      // Reading Text
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '14px "JetBrains Mono", monospace';
+      ctx.textAlign = 'left';
+      wrapText(ctx, card.reading || '', colX + 16, spreadY + 268, colW - 32, 22, false);
+    } else {
+      // Card Emoji
+      ctx.font = '48px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+      ctx.shadowColor = cfg.glowColor;
+      ctx.shadowBlur = 16;
+      ctx.fillText(card.vibe_emoji || '🔮', colX + colW / 2, spreadY + 104);
+      ctx.shadowBlur = 0;
+
+      // Archetype Title
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 17px "Cinzel", serif, sans-serif';
+      const archName = (card.archetype || 'The Voyager').toUpperCase();
+      wrapText(ctx, archName, colX + colW / 2, spreadY + 140, colW - 24, 22, true);
+
+      // Inner divider
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.moveTo(colX + 24, spreadY + 185);
+      ctx.lineTo(colX + colW - 24, spreadY + 185);
+      ctx.stroke();
+
+      // Role Subtitle
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '600 11px monospace';
+      const subTitle = (card.title || '').toUpperCase();
+      wrapText(ctx, subTitle, colX + colW / 2, spreadY + 208, colW - 28, 16, true);
+
+      // Reading Text
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '14px "JetBrains Mono", monospace';
+      ctx.textAlign = 'left';
+      wrapText(ctx, card.reading || '', colX + 16, spreadY + 252, colW - 32, 22, false);
+    }
   });
 
   // 7. Tomorrow's Absurd Prophecy Box
@@ -635,8 +698,14 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
             <span class="card-timeline-num">I</span>
             <span class="card-timeline-tag">PAST • THE KNOWN</span>
           </div>
-          <div class="card-avatar-wrap">
-            <span class="card-avatar-emoji">${cards[0].vibe_emoji || '🔮'}</span>
+          <div class="card-art-box" id="card-art-box-0" aria-label="Tarot card illustration">
+            <div class="card-art-shimmer" id="card-art-shimmer-0">
+              <div class="shimmer-scanner"></div>
+              <div class="shimmer-avatar">${cards[0].vibe_emoji || '🔮'}</div>
+              <span class="shimmer-label">Manifesting art...</span>
+            </div>
+            <img class="card-art-img hidden" id="card-art-img-0" alt="${cards[0].archetype} illustration" />
+            <span class="card-art-badge">✦ AI-generated art</span>
           </div>
           <h4 class="card-archetype-title">${cards[0].archetype}</h4>
           <div class="card-role-subtitle">${cards[0].title}</div>
@@ -651,8 +720,14 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
             <span class="card-timeline-num">II</span>
             <span class="card-timeline-tag">PRESENT • EXPOSURE</span>
           </div>
-          <div class="card-avatar-wrap">
-            <span class="card-avatar-emoji">${cards[1].vibe_emoji || '⚡'}</span>
+          <div class="card-art-box" id="card-art-box-1" aria-label="Tarot card illustration">
+            <div class="card-art-shimmer" id="card-art-shimmer-1">
+              <div class="shimmer-scanner"></div>
+              <div class="shimmer-avatar">${cards[1].vibe_emoji || '⚡'}</div>
+              <span class="shimmer-label">Manifesting art...</span>
+            </div>
+            <img class="card-art-img hidden" id="card-art-img-1" alt="${cards[1].archetype} illustration" />
+            <span class="card-art-badge">✦ AI-generated art</span>
           </div>
           <h4 class="card-archetype-title">${cards[1].archetype}</h4>
           <div class="card-role-subtitle">${cards[1].title}</div>
@@ -668,8 +743,14 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
             <span class="card-timeline-num">III</span>
             <span class="card-timeline-tag">FUTURE • PROPHECY</span>
           </div>
-          <div class="card-avatar-wrap">
-            <span class="card-avatar-emoji">${cards[2].vibe_emoji || '🌀'}</span>
+          <div class="card-art-box" id="card-art-box-2" aria-label="Tarot card illustration">
+            <div class="card-art-shimmer" id="card-art-shimmer-2">
+              <div class="shimmer-scanner"></div>
+              <div class="shimmer-avatar">${cards[2].vibe_emoji || '🌀'}</div>
+              <span class="shimmer-label">Manifesting art...</span>
+            </div>
+            <img class="card-art-img hidden" id="card-art-img-2" alt="${cards[2].archetype} illustration" />
+            <span class="card-art-badge">✦ AI-generated art</span>
           </div>
           <h4 class="card-archetype-title">${cards[2].archetype}</h4>
           <div class="card-role-subtitle">${cards[2].title}</div>
@@ -1108,7 +1189,91 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   initConnectionReveal();
   initBehaviourTest(fingerprint);
   initOracleChat(fingerprint, score);
-  initShareModal({ canvas, storySlides, fortune, score, fingerprint });
+  const modalHandler = initShareModal({ canvas, storySlides, fortune, score, fingerprint });
+
+  // Asynchronously generate AI card illustration (or SVG fallback)
+  async function loadCardIllustration() {
+    let artDataUrl = null;
+    const card1 = cards[0] || {};
+    const themeName = fortune.theme || 'Destiny & device memory';
+
+    try {
+      const artResponse = await fetch('/api/art', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          archetype: card1.archetype || fortune.archetype || 'The Digital Wanderer',
+          vibe: card1.vibe_emoji || fortune.vibe_emoji || '🔮',
+          theme: themeName
+        })
+      });
+
+      if (artResponse.ok) {
+        const artJson = await artResponse.json();
+        if (artJson && artJson.image) {
+          artDataUrl = artJson.image;
+        }
+      }
+    } catch (err) {
+      console.warn('[/api/art] Client art fetch error, falling back to SVG:', err);
+    }
+
+    if (!artDataUrl) {
+      artDataUrl = generateCardArtDataUrl(card1.vibe_emoji, card1.archetype, themeName);
+    }
+
+    // Update DOM cards with the art
+    cards.forEach((c, idx) => {
+      const imgEl = document.getElementById(`card-art-img-${idx}`);
+      const shimmerEl = document.getElementById(`card-art-shimmer-${idx}`);
+      if (imgEl) {
+        const src = (idx === 0) ? artDataUrl : generateCardArtDataUrl(c.vibe_emoji, c.archetype, themeName);
+        imgEl.src = src;
+        imgEl.onload = () => {
+          imgEl.classList.remove('hidden');
+          if (shimmerEl) shimmerEl.style.display = 'none';
+        };
+        if (imgEl.complete) {
+          imgEl.classList.remove('hidden');
+          if (shimmerEl) shimmerEl.style.display = 'none';
+        }
+      }
+    });
+
+    // Load Image instance for Canvas and Story Slides export
+    const artImg = new Image();
+    artImg.crossOrigin = 'anonymous';
+    artImg.src = artDataUrl;
+    artImg.onload = () => {
+      // 1. Redraw Feed Canvas so download image includes the art!
+      const updatedCanvas = generateTarotCardCanvas({
+        fortune,
+        fingerprint,
+        score,
+        cardArtImage: artImg
+      });
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(updatedCanvas, 0, 0);
+      }
+
+      // 2. Generate updated Story Slides with Slide 1 art
+      const updatedStorySlides = generateAllStorySlides({
+        fortune,
+        fingerprint,
+        score,
+        cardArtImage: artImg
+      });
+
+      // 3. Update modal carousel previews
+      if (modalHandler && typeof modalHandler.updateSlides === 'function') {
+        modalHandler.updateSlides({ canvas, storySlides: updatedStorySlides });
+      }
+    };
+  }
+
+  loadCardIllustration();
 
   return canvas;
 }
@@ -1298,6 +1463,24 @@ function initShareModal({ canvas, storySlides, fortune, score, fingerprint }) {
       setTimeout(() => feedbackEl.classList.add('hidden'), 2500);
     }
   });
+
+  return {
+    updateSlides({ canvas: updatedCanvas, storySlides: updatedStorySlides }) {
+      if (updatedCanvas) {
+        slidesData[0].canvas = updatedCanvas;
+        slidesData[0].dataUrl = updatedCanvas.toDataURL('image/png');
+      }
+      if (Array.isArray(updatedStorySlides) && updatedStorySlides.length >= 3) {
+        slidesData[1].canvas = updatedStorySlides[0];
+        slidesData[1].dataUrl = updatedStorySlides[0].toDataURL('image/png');
+        slidesData[2].canvas = updatedStorySlides[1];
+        slidesData[2].dataUrl = updatedStorySlides[1].toDataURL('image/png');
+        slidesData[3].canvas = updatedStorySlides[2];
+        slidesData[3].dataUrl = updatedStorySlides[2].toDataURL('image/png');
+      }
+      renderModalSlide(currentSlideIndex);
+    }
+  };
 }
 
 /**

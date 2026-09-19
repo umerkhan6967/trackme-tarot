@@ -4045,6 +4045,116 @@ html, body {
   filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.2));
 }
 
+/* AI Card Art Frame & Shimmer Placeholder */
+.card-art-box {
+  position: relative;
+  width: 100%;
+  height: 190px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin: 0.65rem 0 0.85rem 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #06080e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.card-art-box:hover .card-art-img {
+  transform: scale(1.02);
+}
+
+.card-art-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.card-art-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(5, 7, 12, 0.85);
+  border: 1px solid rgba(0, 255, 157, 0.5);
+  color: var(--neon-green);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 10px rgba(0, 255, 157, 0.25);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* Shimmer Loading State */
+.card-art-shimmer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: linear-gradient(
+    90deg,
+    rgba(10, 14, 26, 0.95) 0%,
+    rgba(32, 20, 52, 0.8) 50%,
+    rgba(10, 14, 26, 0.95) 100%
+  );
+  background-size: 200% 100%;
+  animation: artShimmerWave 2s infinite linear;
+  z-index: 2;
+  transition: opacity 0.3s ease;
+}
+
+@keyframes artShimmerWave {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.shimmer-scanner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-green), var(--neon-violet-bright), transparent);
+  box-shadow: 0 0 10px var(--neon-green);
+  animation: scanLaser 2.4s infinite ease-in-out;
+}
+
+@keyframes scanLaser {
+  0% { top: 0%; opacity: 0.2; }
+  50% { top: 96%; opacity: 1; }
+  100% { top: 0%; opacity: 0.2; }
+}
+
+.shimmer-avatar {
+  font-size: 2.4rem;
+  animation: pulseAvatar 1.6s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 10px rgba(176, 38, 255, 0.6));
+}
+
+@keyframes pulseAvatar {
+  0% { transform: scale(0.92); opacity: 0.7; }
+  100% { transform: scale(1.08); opacity: 1; }
+}
+
+.shimmer-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
 .card-archetype-title {
   font-family: var(--font-mystic);
   font-size: 1.15rem;

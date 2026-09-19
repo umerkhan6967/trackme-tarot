@@ -158,7 +158,7 @@ function drawStoryBase(ctx, slideNum, totalSlides = 3) {
 /**
  * Slide 1: Archetype Title, Vibe Emoji, and "TrackMe Tarot"
  */
-export function generateSlide1Canvas({ fortune, fingerprint, score }) {
+export function generateSlide1Canvas({ fortune, fingerprint, score, cardArtImage }) {
   const canvas = document.createElement('canvas');
   canvas.width = 1080;
   canvas.height = 1920;
@@ -184,25 +184,76 @@ export function generateSlide1Canvas({ fortune, fingerprint, score }) {
   ctx.letterSpacing = '2px';
   ctx.fillText(`THEME: ${theme.toUpperCase()}`, 540, 320);
 
-  // Large Vibe Emoji Avatar
-  ctx.font = '150px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
-  ctx.shadowColor = 'rgba(0, 255, 157, 0.5)';
-  ctx.shadowBlur = 40;
-  ctx.fillText(emoji, 540, 570);
-  ctx.shadowBlur = 0;
+  const hasArtImage = Boolean(cardArtImage && typeof ctx.drawImage === 'function' && (cardArtImage.complete || cardArtImage.naturalWidth || cardArtImage.width));
 
-  // Archetype Title
-  ctx.fillStyle = '#ffffff';
-  let titleSize = 56;
-  ctx.font = `900 ${titleSize}px "Cinzel", serif, sans-serif`;
-  while (ctx.measureText(archetype).width > 900 && titleSize > 34) {
-    titleSize -= 2;
+  if (hasArtImage) {
+    const artW = 680;
+    const artH = 360;
+    const artX = (1080 - artW) / 2;
+    const artY = 360;
+
+    // Glowing ornate frame
+    ctx.strokeStyle = 'rgba(0, 255, 157, 0.6)';
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(0, 255, 157, 0.4)';
+    ctx.shadowBlur = 18;
+    roundRect(ctx, artX, artY, artW, artH, 14);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    if (typeof ctx.save === 'function' && typeof ctx.clip === 'function') {
+      ctx.save();
+      ctx.beginPath();
+      roundRect(ctx, artX + 2, artY + 2, artW - 4, artH - 4, 12);
+      ctx.clip();
+      ctx.drawImage(cardArtImage, artX + 2, artY + 2, artW - 4, artH - 4);
+      ctx.restore();
+    } else {
+      ctx.drawImage(cardArtImage, artX + 2, artY + 2, artW - 4, artH - 4);
+    }
+
+    // AI art pill badge
+    ctx.fillStyle = 'rgba(6, 8, 14, 0.85)';
+    roundRect(ctx, artX + 16, artY + 16, 175, 30, 6);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0, 255, 157, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#00ff9d';
+    ctx.font = '700 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('✦ AI-GENERATED ART', artX + 16 + 175 / 2, artY + 36);
+
+    // Archetype Title directly below art
+    ctx.fillStyle = '#ffffff';
+    let titleSize = 48;
     ctx.font = `900 ${titleSize}px "Cinzel", serif, sans-serif`;
+    while (ctx.measureText(archetype).width > 900 && titleSize > 30) {
+      titleSize -= 2;
+      ctx.font = `900 ${titleSize}px "Cinzel", serif, sans-serif`;
+    }
+    wrapText(ctx, archetype, 540, 765, 920, titleSize + 10, true);
+  } else {
+    // Large Vibe Emoji Avatar
+    ctx.font = '150px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+    ctx.shadowColor = 'rgba(0, 255, 157, 0.5)';
+    ctx.shadowBlur = 40;
+    ctx.fillText(emoji, 540, 570);
+    ctx.shadowBlur = 0;
+
+    // Archetype Title
+    ctx.fillStyle = '#ffffff';
+    let titleSize = 56;
+    ctx.font = `900 ${titleSize}px "Cinzel", serif, sans-serif`;
+    while (ctx.measureText(archetype).width > 900 && titleSize > 34) {
+      titleSize -= 2;
+      ctx.font = `900 ${titleSize}px "Cinzel", serif, sans-serif`;
+    }
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+    ctx.shadowBlur = 20;
+    wrapText(ctx, archetype, 540, 720, 920, titleSize + 12, true);
+    ctx.shadowBlur = 0;
   }
-  ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-  ctx.shadowBlur = 20;
-  wrapText(ctx, archetype, 540, 720, 920, titleSize + 12, true);
-  ctx.shadowBlur = 0;
 
   // Prominent "TrackMe Tarot" Ribbon Box
   const brandBoxY = 880;
@@ -516,9 +567,9 @@ export function generateSlide3Canvas({ fortune, fingerprint, score }) {
 /**
  * Generates all 3 1080x1920 Story slide canvases
  */
-export function generateAllStorySlides({ fortune, fingerprint, score }) {
+export function generateAllStorySlides({ fortune, fingerprint, score, cardArtImage }) {
   return [
-    generateSlide1Canvas({ fortune, fingerprint, score }),
+    generateSlide1Canvas({ fortune, fingerprint, score, cardArtImage }),
     generateSlide2Canvas({ fortune, fingerprint, score }),
     generateSlide3Canvas({ fortune, fingerprint, score })
   ];

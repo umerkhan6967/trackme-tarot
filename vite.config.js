@@ -88,6 +88,28 @@ export default defineConfig(({ mode }) => {
               });
               return;
             }
+            if (req.url && req.url.startsWith('/api/art')) {
+              wrapResponse(res);
+              let bodyStr = '';
+              req.on('data', chunk => { bodyStr += chunk; });
+              req.on('end', async () => {
+                try {
+                  req.body = bodyStr ? JSON.parse(bodyStr) : {};
+                } catch (e) {
+                  req.body = {};
+                }
+                try {
+                  const artModule = await import('./api/art.js');
+                  await artModule.default(req, res);
+                } catch (err) {
+                  console.error('[vite dev] /api/art error:', err);
+                  if (!res.headersSent) {
+                    res.status(500).json({ error: 'Art internal error: ' + err.message });
+                  }
+                }
+              });
+              return;
+            }
             next();
           });
         }
