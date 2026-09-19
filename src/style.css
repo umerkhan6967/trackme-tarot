@@ -2672,3 +2672,100 @@ html, body {
   margin: 0;
 }
 
+/* Feature 3: Opt-in Connection Reveal */
+.telemetry-card.connection-card::before {
+  background: #a855f7;
+}
+
+.telemetry-card.connection-card:hover {
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+.connection-reveal-btn {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-color: rgba(168, 85, 247, 0.35);
+  background: rgba(168, 85, 247, 0.1);
+  color: #e9d5ff;
+}
+
+.connection-reveal-btn:hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: #a855f7;
+}
+
+.connection-reveal-result {
+  margin-top: 0.85rem;
+  animation: fadeSlideUp 0.3s ease-out;
+}
+
+.reveal-result-box {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.8rem;
+}
+
+.reveal-result-box.match {
+  border-color: rgba(0, 255, 157, 0.4);
+  background: rgba(0, 255, 157, 0.04);
+}
+
+.reveal-result-box.mismatch {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.reveal-result-box.info {
+  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(56, 189, 248, 0.04);
+}
+
+.reveal-comparison {
+  color: #e2e8f0;
+  line-height: 1.5;
+  margin: 0 0 0.4rem 0;
+  font-size: 0.8rem;
+}
+
+.reveal-comparison strong {
+  color: #fff;
+  font-family: var(--font-mono);
+}
+
+.reveal-verdict {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.reveal-verdict.match {
+  color: var(--neon-green);
+}
+
+.reveal-verdict.mismatch {
+  color: #f59e0b;
+}
+
+.reveal-verdict.neutral {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.reveal-footnote {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-top: 0.45rem;
+}
+
+

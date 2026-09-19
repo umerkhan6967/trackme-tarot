@@ -520,6 +520,22 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
             Combined from Canvas 2D + OfflineAudioContext + WebGL. Nothing is sent to any server.
           </p>
         </div>
+
+        <!-- Feature 3: Opt-in Connection Revelation -->
+        <div class="telemetry-card connection-card" aria-label="Connection Revelation Audit">
+          <div class="telemetry-card-header">
+            <span class="telemetry-card-badge">OPT-IN REVELATION [approximate]</span>
+            <span class="telemetry-card-icon">🌐</span>
+          </div>
+          <h4 class="telemetry-card-title">Connection Geolocation</h4>
+          <p class="telemetry-card-sub" style="margin-bottom: 0.75rem;">
+            Query server edge routing headers to compare your connection country against your browser timezone.
+          </p>
+          <button id="btn-reveal-connection" class="cyber-btn tertiary connection-reveal-btn" type="button">
+            <span class="btn-icon">👁️</span> Show what my connection reveals
+          </button>
+          <div id="connection-reveal-result" class="connection-reveal-result hidden" aria-live="polite"></div>
+        </div>
       </div>
 
       <!-- Why This Score List -->
@@ -560,6 +576,9 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   // Trigger smooth gauge animation
   animateGauge(score.score);
 
+  // Initialize opt-in connection reveal listener
+  initConnectionReveal();
+
   return canvas;
 }
 
@@ -599,3 +618,239 @@ export function animateGauge(targetScore) {
 
   requestAnimationFrame(update);
 }
+
+/**
+ * Common timezone to ISO 3166-1 alpha-2 country code mapping
+ */
+export const TIMEZONE_TO_COUNTRY = {
+  // Asia
+  'Asia/Karachi': 'PK',
+  'Asia/Kolkata': 'IN',
+  'Asia/Calcutta': 'IN',
+  'Asia/Dhaka': 'BD',
+  'Asia/Colombo': 'LK',
+  'Asia/Dubai': 'AE',
+  'Asia/Riyadh': 'SA',
+  'Asia/Qatar': 'QA',
+  'Asia/Muscat': 'OM',
+  'Asia/Kuwait': 'KW',
+  'Asia/Bahrain': 'BH',
+  'Asia/Singapore': 'SG',
+  'Asia/Tokyo': 'JP',
+  'Asia/Seoul': 'KR',
+  'Asia/Hong_Kong': 'HK',
+  'Asia/Shanghai': 'CN',
+  'Asia/Chongqing': 'CN',
+  'Asia/Urumqi': 'CN',
+  'Asia/Taipei': 'TW',
+  'Asia/Bangkok': 'TH',
+  'Asia/Jakarta': 'ID',
+  'Asia/Makassar': 'ID',
+  'Asia/Jayapura': 'ID',
+  'Asia/Kuala_Lumpur': 'MY',
+  'Asia/Kuching': 'MY',
+  'Asia/Manila': 'PH',
+  'Asia/Ho_Chi_Minh': 'VN',
+  'Asia/Saigon': 'VN',
+  'Asia/Beirut': 'LB',
+  'Asia/Tel_Aviv': 'IL',
+  'Asia/Jerusalem': 'IL',
+  'Asia/Amman': 'JO',
+  'Asia/Baghdad': 'IQ',
+  'Asia/Tehran': 'IR',
+  'Asia/Kabul': 'AF',
+  'Asia/Tashkent': 'UZ',
+  'Asia/Almaty': 'KZ',
+  'Asia/Baku': 'AZ',
+  'Asia/Tbilisi': 'GE',
+  'Asia/Yerevan': 'AM',
+
+  // Americas
+  'America/New_York': 'US',
+  'America/Detroit': 'US',
+  'America/Kentucky/Louisville': 'US',
+  'America/Chicago': 'US',
+  'America/Indiana/Indianapolis': 'US',
+  'America/Denver': 'US',
+  'America/Boise': 'US',
+  'America/Phoenix': 'US',
+  'America/Los_Angeles': 'US',
+  'America/Anchorage': 'US',
+  'America/Juneau': 'US',
+  'America/Honolulu': 'US',
+  'America/Toronto': 'CA',
+  'America/Montreal': 'CA',
+  'America/Vancouver': 'CA',
+  'America/Edmonton': 'CA',
+  'America/Winnipeg': 'CA',
+  'America/Halifax': 'CA',
+  'America/St_Johns': 'CA',
+  'America/Mexico_City': 'MX',
+  'America/Cancun': 'MX',
+  'America/Monterrey': 'MX',
+  'America/Tijuana': 'MX',
+  'America/Bogota': 'CO',
+  'America/Lima': 'PE',
+  'America/Santiago': 'CL',
+  'America/Buenos_Aires': 'AR',
+  'America/Cordoba': 'AR',
+  'America/Sao_Paulo': 'BR',
+  'America/Rio_Branco': 'BR',
+  'America/Manaus': 'BR',
+  'America/Fortaleza': 'BR',
+  'America/Caracas': 'VE',
+  'America/Guayaquil': 'EC',
+  'America/Montevideo': 'UY',
+  'America/Asuncion': 'PY',
+  'America/La_Paz': 'BO',
+  'America/Panama': 'PA',
+  'America/Costa_Rica': 'CR',
+  'America/Guatemala': 'GT',
+
+  // Europe
+  'Europe/London': 'GB',
+  'Europe/Dublin': 'IE',
+  'Europe/Paris': 'FR',
+  'Europe/Berlin': 'DE',
+  'Europe/Amsterdam': 'NL',
+  'Europe/Brussels': 'BE',
+  'Europe/Luxembourg': 'LU',
+  'Europe/Madrid': 'ES',
+  'Europe/Rome': 'IT',
+  'Europe/Zurich': 'CH',
+  'Europe/Vienna': 'AT',
+  'Europe/Stockholm': 'SE',
+  'Europe/Oslo': 'NO',
+  'Europe/Copenhagen': 'DK',
+  'Europe/Helsinki': 'FI',
+  'Europe/Warsaw': 'PL',
+  'Europe/Prague': 'CZ',
+  'Europe/Bratislava': 'SK',
+  'Europe/Budapest': 'HU',
+  'Europe/Lisbon': 'PT',
+  'Europe/Athens': 'GR',
+  'Europe/Bucharest': 'RO',
+  'Europe/Sofia': 'BG',
+  'Europe/Belgrade': 'RS',
+  'Europe/Zagreb': 'HR',
+  'Europe/Kyiv': 'UA',
+  'Europe/Kiev': 'UA',
+  'Europe/Minsk': 'BY',
+  'Europe/Moscow': 'RU',
+  'Europe/Istanbul': 'TR',
+
+  // Oceania
+  'Australia/Sydney': 'AU',
+  'Australia/Melbourne': 'AU',
+  'Australia/Brisbane': 'AU',
+  'Australia/Adelaide': 'AU',
+  'Australia/Perth': 'AU',
+  'Australia/Darwin': 'AU',
+  'Australia/Hobart': 'AU',
+  'Pacific/Auckland': 'NZ',
+  'Pacific/Chatham': 'NZ',
+  'Pacific/Fiji': 'FJ',
+
+  // Africa
+  'Africa/Cairo': 'EG',
+  'Africa/Johannesburg': 'ZA',
+  'Africa/Lagos': 'NG',
+  'Africa/Nairobi': 'KE',
+  'Africa/Casablanca': 'MA',
+  'Africa/Algiers': 'DZ',
+  'Africa/Tunis': 'TN',
+  'Africa/Accra': 'GH',
+  'Africa/Addis_Ababa': 'ET'
+};
+
+/**
+ * Attaches click handler for the opt-in "Show what my connection reveals" button
+ */
+export function initConnectionReveal() {
+  const btn = document.getElementById('btn-reveal-connection');
+  const resultContainer = document.getElementById('connection-reveal-result');
+  if (!btn || !resultContainer) return;
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.classList.add('loading');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spin-icon">⟳</span> Checking connection headers...';
+
+    try {
+      // 1. Query /api/network (reads ONLY x-vercel-ip-country with Cache-Control: no-store)
+      const res = await fetch('/api/network', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({ country: null }));
+      const connCountry = data?.country;
+
+      // 2. Read browser timezone
+      const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown';
+      const timezoneCountryCode = TIMEZONE_TO_COUNTRY[browserTimezone] || null;
+
+      const formatCountry = (code) => {
+        if (!code) return 'Not detected';
+        try {
+          const regionName = new Intl.DisplayNames(['en'], { type: 'region' }).of(code);
+          return regionName ? `${regionName} (${code})` : code;
+        } catch {
+          return code;
+        }
+      };
+
+      resultContainer.classList.remove('hidden');
+
+      if (!connCountry) {
+        // Missing header on localhost or local dev
+        resultContainer.innerHTML = `
+          <div class="reveal-result-box info">
+            <p class="reveal-comparison">
+              Connection country: <strong>Not detected</strong>, browser timezone: <strong>${browserTimezone}</strong>
+            </p>
+            <p class="reveal-verdict neutral">
+              Only available on the deployed site.
+            </p>
+            <div class="reveal-footnote">[approximate]</div>
+          </div>
+        `;
+      } else {
+        const isMatch = Boolean(
+          timezoneCountryCode && (timezoneCountryCode.toUpperCase() === connCountry.toUpperCase())
+        );
+        const verdictText = isMatch
+          ? 'Your connection and browser agree.'
+          : 'This can mean a VPN, a proxy or travel.';
+        const verdictClass = isMatch ? 'match' : 'mismatch';
+
+        resultContainer.innerHTML = `
+          <div class="reveal-result-box ${verdictClass}">
+            <p class="reveal-comparison">
+              Connection country: <strong>${formatCountry(connCountry)}</strong>, browser timezone: <strong>${browserTimezone}</strong>
+            </p>
+            <p class="reveal-verdict ${verdictClass}">
+              ${verdictText}
+            </p>
+            <div class="reveal-footnote">[approximate]</div>
+          </div>
+        `;
+      }
+    } catch (err) {
+      resultContainer.classList.remove('hidden');
+      resultContainer.innerHTML = `
+        <div class="reveal-result-box info">
+          <p class="reveal-comparison">
+            Connection country: <strong>Not detected</strong>, browser timezone: <strong>${Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown'}</strong>
+          </p>
+          <p class="reveal-verdict neutral">
+            Only available on the deployed site.
+          </p>
+          <div class="reveal-footnote">[approximate]</div>
+        </div>
+      `;
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btn.innerHTML = originalText;
+    }
+  });
+}
+
