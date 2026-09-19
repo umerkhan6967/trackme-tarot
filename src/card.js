@@ -516,8 +516,16 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   const colorDepthDisplay = fingerprint.colorDepth || (window.screen?.colorDepth ? `${window.screen.colorDepth}-bit` : '24-bit');
   const hdrDisplay = fingerprint.hdr || (window.matchMedia?.('(dynamic-range: high)').matches ? 'Supported' : 'Unsupported');
   const gamutDisplay = fingerprint.colorGamut || 'sRGB';
-  const gpcStatus = fingerprint.gpc || fingerprint.globalPrivacyControl || 'unavailable';
-  const dntStatus = fingerprint.dnt || fingerprint.doNotTrack || 'unavailable';
+
+  // Do Not Track and Global Privacy Control: show "off or not reported by this browser" when null or unspecified
+  const isGpcOn = fingerprint.gpc === 'on' || fingerprint.gpc === true || fingerprint.gpc === '1' || fingerprint.globalPrivacyControl === 'on' || fingerprint.globalPrivacyControl === true;
+  const gpcDisplay = isGpcOn ? 'on' : 'off or not reported by this browser';
+  const gpcStatusClass = isGpcOn ? 'read' : 'unavailable';
+
+  const isDntOn = fingerprint.dnt === 'on' || fingerprint.dnt === true || fingerprint.dnt === '1' || fingerprint.doNotTrack === 'on' || fingerprint.doNotTrack === true || fingerprint.doNotTrack === '1';
+  const dntDisplay = isDntOn ? 'on' : 'off or not reported by this browser';
+  const dntStatusClass = isDntOn ? 'read' : 'unavailable';
+
   const isLocalhost = Boolean(
     typeof window !== 'undefined' && (
       window.location.hostname === 'localhost' ||
@@ -525,7 +533,9 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
       window.location.hostname === '[::1]'
     )
   );
-  const latencyTag = fingerprint.latencyTag || (isLocalhost ? 'local test' : 'approximate');
+  // Show latency as "Server response time (includes cold start)" and mark it approximate
+  const latencyTitle = 'Server response time (includes cold start)';
+  const latencyTag = 'approximate';
   const latencyDisplay = fingerprint.latencyDisplay || (fingerprint.latency !== null && fingerprint.latency !== undefined ? `${fingerprint.latency} ms` : 'unavailable');
 
   // Output debug info when ?debug=1 is present
@@ -533,28 +543,36 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   let debugHtml = '';
   if (isDebug) {
     debugHtml = `
-      <aside class="debug-panel" aria-label="Debug Telemetry Info" style="margin-top: 1rem; width: 100%; max-width: 520px; padding: 0.85rem 1rem; background: rgba(5, 7, 12, 0.95); border: 1px dashed ${isGemini ? 'var(--neon-green)' : '#f59e0b'}; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.75rem; color: #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.6);">
-        <div style="color: ${isGemini ? 'var(--neon-green)' : '#f59e0b'}; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 0.4rem; display: flex; justify-content: space-between;">
+      <aside class="debug-panel" aria-label="Debug Telemetry Info">
+        <div class="debug-header">
           <span>&gt; DEBUG CONSOLE (?debug=1)</span>
-          <span style="opacity: 0.8;">HTTP ${fortune.errorStatus || 200}</span>
+          <span>HTTP ${fortune.errorStatus || (isGemini ? 200 : 503)}</span>
         </div>
-        <div>Mode: <strong style="color: ${isGemini ? 'var(--neon-green)' : '#f59e0b'};">${isGemini ? 'Live Gemini AI' : 'Offline Fallback'}</strong></div>
-        <div>Source: <code>${fortune.source}</code></div>
-        ${fortune.model ? `<div>Model: <strong style="color: #38bdf8;">${fortune.model}</strong></div>` : ''}
-        ${fortune.errorMessage ? `<div style="color: #ff4757; margin-top: 0.35rem; line-height: 1.35;">Offline Reason: <code>[${fortune.errorStatus || 503}] ${fortune.errorMessage}</code></div>` : ''}
-        ${fortune.attempts?.length ? `<div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.35rem;">Attempts Tried: ${fortune.attempts.map(a => `${a.model} (att ${a.attempt}: ${a.status || 'err'})`).join(', ')}</div>` : ''}
+        <div class="debug-row">Mode: <strong style="color: ${isGemini ? 'var(--neon-green)' : '#f59e0b'};">${isGemini ? 'Live Gemini AI' : 'Offline Fallback'}</strong></div>
+        <div class="debug-row">Source: <code>${fortune.source || 'fallback'}</code></div>
+        ${fortune.model ? `<div class="debug-row">Model: <strong style="color: #38bdf8;">${fortune.model}</strong></div>` : ''}
+        ${!isGemini && fortune.validationFailureReason ? `<div class="debug-row alert" style="color: #fbbf24;">Validation Failure: <code>${fortune.validationFailureReason}</code></div>` : ''}
+        ${!isGemini && fortune.errorMessage ? `<div class="debug-row alert" style="color: #ff4757;">Offline Reason: <code>[${fortune.errorStatus || 503}] ${fortune.errorMessage}</code></div>` : ''}
+        ${fortune.attempts?.length ? `<div class="debug-row attempts" style="font-size: 0.68rem; color: var(--text-muted);">Attempts Tried: ${fortune.attempts.map(a => `${a.model} (att ${a.attempt}: ${a.status || 'err'})`).join(', ')}</div>` : ''}
       </aside>
     `;
     console.log('[DEBUG 1 OUTPUT]', {
       source: fortune.source,
       model: fortune.model || null,
       errorStatus: fortune.errorStatus || null,
+      validationFailureReason: fortune.validationFailureReason || null,
       errorMessage: fortune.errorMessage || null,
       attempts: fortune.attempts || null
     });
   }
 
-  // Rare Card Discovery Banner HTML (if any rare card matches)
+  // 1. Top: Small Gemini/Offline Badge above the spread
+  const originBadgeEl = document.getElementById('result-origin-badge');
+  if (originBadgeEl) {
+    originBadgeEl.innerHTML = oracleBadgeText;
+  }
+
+  // Rare Card Discovery Banner HTML (ONLY if rare card actually triggered)
   let rareCardsHtml = '';
   if (rareCards.length > 0) {
     rareCardsHtml = `
@@ -581,7 +599,7 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
     `;
   }
 
-  // 1. Three-Card Tarot Spread Triptych HTML (Interactive cards flipping in sequentially)
+  // 1. Three-Card Tarot Spread HTML (large and readable, body text >= 15px)
   const spreadHtml = `
     <div class="tarot-3card-spread-wrapper" aria-label="Three card spread result">
       ${rareCardsHtml}
@@ -648,107 +666,22 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
     </div>
   `;
 
-  // Inject the spread into tarot-spread-container
   const spreadContainer = document.getElementById('tarot-spread-container');
   if (spreadContainer) {
     spreadContainer.innerHTML = spreadHtml;
   }
 
-  // 2. High-Res 1080x1350 Tarot Canvas Preview Card + 1080x1920 Story Slides (Side-by-Side)
-  const cardOnlyHtml = `
-    <div class="share-formats-container" aria-label="Shareable Card and Vertical Story Slides">
-      <!-- Format 1: 1080x1350 Feed Card Preview -->
-      <article class="tarot-card-canvas-wrap format-card-box" id="active-tarot-card" aria-label="Shareable 3-Card Tarot Card">
-        <div class="card-preview-header">
-          <span class="preview-tag">FEED CARD (1080×1350)</span>
-          <span class="preview-origin">${oracleBadgeText}</span>
-          <span class="preview-res">POST</span>
-        </div>
-        <div class="canvas-image-container">
-          <img class="tarot-canvas-img" src="${dataUrl}" alt="TrackMe Tarot 3-Card Spread - ${cards[0].archetype}, ${cards[1].archetype}, ${cards[2].archetype}" id="tarot-rendered-image" />
-        </div>
-      </article>
-
-      <!-- Format 2: 1080x1920 Story-Style Share Slides next to the existing card -->
-      <article class="story-slides-preview-wrap format-story-box" id="active-story-slides" aria-label="Story-Style Share Slides (1080x1920)">
-        <div class="card-preview-header">
-          <span class="preview-tag story-tag">STORY SLIDES (1080×1920)</span>
-          <span class="preview-origin">${oracleBadgeText}</span>
-          <span class="preview-res">9:16 VERTICAL</span>
-        </div>
-        <div class="story-slide-viewer">
-          <div class="story-image-container">
-            <img class="story-canvas-img" src="${storyDataUrls[0]}" alt="TrackMe Tarot Story Slide 1" id="story-rendered-image" />
-          </div>
-          <div class="story-slide-nav">
-            <button id="btn-story-prev" class="story-arrow-btn" type="button" aria-label="Previous story slide">‹</button>
-            <div class="story-dots-row" id="story-dots-row">
-              <button class="story-dot-btn active" data-slide="0" aria-label="Slide 1: Archetype"></button>
-              <button class="story-dot-btn" data-slide="1" aria-label="Slide 2: Exposure & Badge"></button>
-              <button class="story-dot-btn" data-slide="2" aria-label="Slide 3: Prophecy"></button>
-            </div>
-            <span class="story-counter-tag" id="story-counter-tag">1 / 3</span>
-            <button id="btn-story-next" class="story-arrow-btn" type="button" aria-label="Next story slide">›</button>
-          </div>
-        </div>
-
-        <!-- Story Action Controls -->
-        <div class="story-actions-bar">
-          <button id="btn-download-slides" class="cyber-btn primary story-btn" type="button">
-            <span class="icon">📥</span> Download slides
-          </button>
-          <button id="btn-share-slides" class="cyber-btn secondary story-btn" type="button">
-            <span class="icon">🔗</span> Share
-          </button>
-        </div>
-        <div id="story-feedback" class="copy-feedback hidden"></div>
-      </article>
-    </div>
-    ${debugHtml}
-  `;
-
-  // Fix-it cards from exposure tips
-  const tipsArray = (fortune.exposure_tips || fortune.tips || [
-    'Use privacy-preserving browser extensions.',
-    'Enable tracking protection in your browser settings.',
-    'Clear cookies and cache regularly.'
-  ]).slice(0, 3);
-
-  const fixItCardsHtml = tipsArray.map((tip, idx) => `
-    <div class="fix-it-card">
-      <div class="fix-it-header">
-        <span class="fix-it-badge">FIX 0${idx + 1}</span>
-        <span class="fix-it-icon">🛡️</span>
-      </div>
-      <p class="fix-it-text">${tip}</p>
-    </div>
-  `).join('');
-
-  // Why this score breakdown items
-  const breakdownHtml = (score.breakdown || []).map((item) => `
-    <div class="breakdown-item">
-      <div class="breakdown-item-header">
-        <span class="breakdown-label">${item.label}</span>
-        <span class="breakdown-points">${item.points}</span>
-      </div>
-      <p class="breakdown-why">${item.why}</p>
-    </div>
-  `).join('');
-
+  // 2. Directly under it, one row: the exposure gauge on left, identity badge on right
   const levelClass = (score.level || 'Medium').toLowerCase().replace(/\s+/g, '-');
-
-  // 2. Exposure Score & Circular Gauge Section (Right Column)
-  const dashboardHtml = `
-    <section class="exposure-dashboard" aria-label="Exposure Score Analysis">
-      <div class="dashboard-header">
-        <span class="dashboard-tag">&gt; TELEMETRY EXPOSURE AUDIT</span>
-        <h3 class="dashboard-title">DIGITAL EXPOSURE INDEX</h3>
+  const gaugeColHtml = `
+    <div class="exposure-gauge-card" aria-label="Exposure Score ${score.score}/100">
+      <div class="gauge-card-header">
+        <span class="gauge-card-tag">&gt; EXPOSURE INDEX</span>
+        <span class="gauge-level-pill level-${levelClass}">${score.level}</span>
       </div>
-
-      <!-- Circular Animated Gauge -->
       <div class="gauge-container">
         <div class="gauge-svg-wrapper">
-          <svg class="gauge-svg" viewBox="0 0 120 120" width="160" height="160">
+          <svg class="gauge-svg" viewBox="0 0 120 120" width="140" height="140">
             <circle class="gauge-bg-circle" cx="60" cy="60" r="48" stroke-width="8" fill="none" />
             <circle
               id="gauge-circle-bar"
@@ -766,173 +699,126 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
               <span id="gauge-score-number" class="gauge-number">0</span>
               <span class="gauge-max">/100</span>
             </div>
-            <span class="gauge-level-badge level-${levelClass}">${score.level}</span>
+            <span class="gauge-level-text">${score.level}</span>
           </div>
         </div>
       </div>
+      <div class="gauge-card-footnote">Calculated from passive browser telemetry</div>
+    </div>
+  `;
 
-      <!-- Hardware & Fingerprint Telemetry Cards (Feature 1 & Feature 2 + Identity Badge) -->
-      <div class="telemetry-cards-container">
-        <!-- Identity Badge Card -->
-        <div class="telemetry-card identity-badge-card" aria-label="Identity Badge: ${badge.name}">
-          <div class="telemetry-card-header">
-            <span class="telemetry-card-badge">IDENTITY BADGE</span>
-            <span class="telemetry-card-icon">${badge.icon}</span>
-          </div>
-          <h4 class="telemetry-card-title">${badge.name}</h4>
-          <p class="identity-badge-rule-statement">
-            "${badge.rule}"
-          </p>
-          <div class="identity-badge-sub">
-            Assigned from real passive signals. No percentage or ranking claims.
-          </div>
+  const badgeColHtml = `
+    <div class="identity-badge-card middle-badge-card" aria-label="Identity Badge: ${badge.name}">
+      <div class="identity-badge-header">
+        <span class="identity-badge-tag">&gt; IDENTITY BADGE</span>
+        <span class="identity-badge-icon">${badge.icon}</span>
+      </div>
+      <h3 class="identity-badge-title">${badge.name}</h3>
+      <div class="identity-badge-rule-quote">
+        "${badge.rule}"
+      </div>
+      <div class="identity-badge-sub">
+        Assigned from real passive signals. No percentage or ranking claims.
+      </div>
+    </div>
+  `;
+
+  const gaugeColEl = document.getElementById('middle-gauge-col');
+  if (gaugeColEl) gaugeColEl.innerHTML = gaugeColHtml;
+
+  const badgeColEl = document.getElementById('middle-badge-col');
+  if (badgeColEl) badgeColEl.innerHTML = badgeColHtml;
+
+  // 4. Tab Panels Content
+  // Tab 1: Why this score
+  const breakdownHtml = (score.breakdown || []).map((item) => `
+    <div class="breakdown-item">
+      <div class="breakdown-item-header">
+        <span class="breakdown-label">${item.label}</span>
+        <span class="breakdown-points">${item.points}</span>
+      </div>
+      <p class="breakdown-why">${item.why}</p>
+    </div>
+  `).join('');
+
+  const tabWhyEl = document.getElementById('tab-panel-why');
+  if (tabWhyEl) {
+    tabWhyEl.innerHTML = `
+      <div class="tab-panel-inner">
+        <div class="tab-panel-header">
+          <h4 class="tab-heading">WHY THIS SCORE</h4>
+          <p class="tab-sub">Signals contributing to your ${score.score}/100 exposure index.</p>
         </div>
-
-        <!-- Feature 1: Your graphics card -->
-        <div class="telemetry-card gpu-card" aria-label="Your graphics card">
-          <div class="telemetry-card-header">
-            <span class="telemetry-card-badge">WEBGL TELEMETRY</span>
-            <span class="telemetry-card-icon">🎮</span>
-          </div>
-          <h4 class="telemetry-card-title">Your graphics card</h4>
-          <div class="telemetry-card-value ${isGpuMasked ? 'is-masked' : ''}">
-            ${gpuDisplay}
-          </div>
-          <p class="telemetry-card-sub">
-            ${isGpuMasked ? 'Unmasked vendor & renderer hidden by your browser privacy protections.' : (fingerprint.gpuVendor ? `Vendor: ${fingerprint.gpuVendor}` : 'Extracted via WEBGL_debug_renderer_info')}
-          </p>
-        </div>
-
-        <!-- Feature 2: Fingerprint Hash -->
-        <div class="telemetry-card fp-hash-card" aria-label="Fingerprint Hash">
-          <div class="telemetry-card-header">
-            <span class="telemetry-card-badge">PERSISTENT HASH</span>
-            <span class="telemetry-card-icon">🧬</span>
-          </div>
-          <h4 class="telemetry-card-title">Identity Signature</h4>
-          <p class="fp-card-statement">
-            Your fingerprint: <strong class="fp-hash-val">${fpHash}</strong>. Open this page in a private window. If the hash is the same, incognito didn't hide you.
-          </p>
-          <p class="telemetry-card-sub">
-            Combined from Canvas 2D + OfflineAudioContext + WebGL. Nothing is sent to any server.
-          </p>
-        </div>
-
-        <!-- Feature 3: Opt-in Connection Revelation -->
-        <div class="telemetry-card connection-card" aria-label="Connection Revelation Audit">
-          <div class="telemetry-card-header">
-            <span class="telemetry-card-badge">OPT-IN REVELATION [approximate]</span>
-            <span class="telemetry-card-icon">🌐</span>
-          </div>
-          <h4 class="telemetry-card-title">Connection Geolocation</h4>
-          <p class="telemetry-card-sub" style="margin-bottom: 0.75rem;">
-            Query server edge routing headers to compare your connection country against your browser timezone.
-          </p>
-          <button id="btn-reveal-connection" class="cyber-btn tertiary connection-reveal-btn" type="button">
-            <span class="btn-icon">👁️</span> Show what my connection reveals
-          </button>
-          <div id="connection-reveal-result" class="connection-reveal-result hidden" aria-live="polite"></div>
-        </div>
-
-        <!-- Feature 4: 5-Second Behaviour Measurement Test -->
-        <div class="telemetry-card behaviour-card" aria-label="Behaviour Measurement Test">
-          <div class="telemetry-card-header">
-            <span class="telemetry-card-badge">BEHAVIOURAL BIOMETRICS</span>
-            <span class="telemetry-card-icon">⚡</span>
-          </div>
-          <h4 class="telemetry-card-title">Behaviour test</h4>
-          <p class="telemetry-card-sub" style="margin-bottom: 0.75rem;">
-            Move your mouse (or drag on touch) and type in the box during the 5-second countdown to see how passive biometrics profile you.
-          </p>
-
-          <div id="behaviour-test-idle">
-            <button id="btn-start-behaviour" class="cyber-btn tertiary behaviour-start-btn" type="button">
-              <span class="btn-icon">⏱️</span> Start 5-second test
-            </button>
-          </div>
-
-          <div id="behaviour-test-active" class="behaviour-test-active hidden">
-            <div class="behaviour-timer-row">
-              <span class="behaviour-timer-badge">COUNTDOWN</span>
-              <span id="behaviour-countdown" class="behaviour-countdown">5.0s</span>
-            </div>
-
-            <div id="behaviour-track-zone" class="behaviour-track-zone" tabindex="0">
-              <span id="track-zone-hint" class="track-zone-hint">Move mouse / drag pointer here</span>
-            </div>
-
-            <div id="behaviour-typing-area" class="behaviour-typing-area">
-              <label for="behaviour-input" class="behaviour-input-label">Type in the box:</label>
-              <input
-                type="text"
-                id="behaviour-input"
-                class="behaviour-input"
-                placeholder="Type anything here (e.g. quick brown fox)..."
-                autocomplete="off"
-                spellcheck="false"
-              />
-            </div>
-            <div id="touch-skip-notice" class="touch-skip-notice hidden">
-              📱 Touch device: touch movement measured (typing skipped)
-            </div>
-          </div>
-
-          <div id="behaviour-test-results" class="behaviour-test-results hidden" aria-live="polite">
-            <div class="behaviour-metrics-grid">
-              <div class="behaviour-metric-item">
-                <span id="lbl-mouse-speed" class="metric-label">Mouse Speed</span>
-                <span id="metric-mouse-speed" class="metric-val">0 px/s</span>
-              </div>
-              <div class="behaviour-metric-item">
-                <span class="metric-label">Pauses (&gt;300ms)</span>
-                <span id="metric-pauses" class="metric-val">0</span>
-              </div>
-              <div class="behaviour-metric-item">
-                <span class="metric-label">Typing Speed</span>
-                <span id="metric-typing-speed" class="metric-val">0 chars/s</span>
-              </div>
-              <div class="behaviour-metric-item">
-                <span class="metric-label">Avg Keystroke Gap</span>
-                <span id="metric-keystroke-gap" class="metric-val">0 ms</span>
-              </div>
-            </div>
-
-            <p class="behaviour-quote">
-              "Websites can measure this without asking."
-            </p>
-            <div class="reveal-footnote">100% in-memory client-side • Text cleared • Nothing leaves the browser</div>
-            <button id="btn-retry-behaviour" class="cyber-btn text-link retry-behaviour-btn" type="button">
-              ↺ Test again
-            </button>
-          </div>
+        <div class="breakdown-list">
+          ${breakdownHtml}
         </div>
       </div>
+    `;
+  }
 
-      <!-- Signals we read Panel -->
-      <div class="signals-we-read-container" id="signals-we-read-panel" aria-label="Signals we read">
-        <div class="signals-panel-header">
-          <div class="signals-header-left">
-            <span class="signals-panel-badge">&gt; PASSIVE AUDIT</span>
-            <h4 class="signals-panel-title">Signals we read</h4>
-          </div>
-          <span class="signals-panel-meta">BROWSER EXPOSURE SPECTRUM</span>
+  // Tab 2: Fix it (three fix cards, ensuring Fix 02 replaces "close dormant tabs")
+  const tipsRaw = fortune.exposure_tips || fortune.tips || [
+    'Enable strict tracking prevention in your browser configuration.',
+    'Use a browser or extension that blocks fingerprinting scripts.',
+    'Keep your operating system updated to patch exposed hardware telemetry vectors.'
+  ];
+  const tipsArray = tipsRaw.slice(0, 3).map((tip, idx) => {
+    if (idx === 1 || /dormant tabs/i.test(tip)) {
+      return 'Use a browser or extension that blocks fingerprinting scripts.';
+    }
+    return tip;
+  });
+
+  const fixItCardsHtml = tipsArray.map((tip, idx) => `
+    <div class="fix-it-card">
+      <div class="fix-it-header">
+        <span class="fix-it-badge">FIX 0${idx + 1}</span>
+        <span class="fix-it-icon">🛡️</span>
+      </div>
+      <p class="fix-it-text">${tip}</p>
+    </div>
+  `).join('');
+
+  const tabFixEl = document.getElementById('tab-panel-fix');
+  if (tabFixEl) {
+    tabFixEl.innerHTML = `
+      <div class="tab-panel-inner">
+        <div class="tab-panel-header">
+          <h4 class="tab-heading">MITIGATION PROTOCOLS</h4>
+          <p class="tab-sub">Actionable steps to minimize your passive browser footprint.</p>
         </div>
-        <p class="signals-panel-sub">
-          Real environmental and configuration signals queried directly by scripts without prompting for user permission.
-        </p>
+        <div class="fix-it-grid">
+          ${fixItCardsHtml}
+        </div>
+        <div class="privacy-note-card" style="margin-top: 1.25rem;">
+          <span class="privacy-icon">🔒</span>
+          <p class="privacy-text">Nothing you saw here left your browser except a summary sent to write your fortune. We store nothing.</p>
+        </div>
+      </div>
+    `;
+  }
 
+  // Tab 3: What we read (signals list + GPU card + fingerprint hash card)
+  const tabSignalsEl = document.getElementById('tab-panel-signals');
+  if (tabSignalsEl) {
+    tabSignalsEl.innerHTML = `
+      <div class="tab-panel-inner">
+        <div class="tab-panel-header">
+          <h4 class="tab-heading">SIGNALS WE READ</h4>
+          <p class="tab-sub">Real environmental and configuration signals queried directly by scripts.</p>
+        </div>
         <div class="signals-read-grid">
-          <!-- Signal 1: Refresh rate -->
+          <!-- Refresh rate -->
           <div class="signal-read-card" aria-label="Refresh rate">
             <div class="signal-read-top">
               <span class="signal-read-name">Refresh rate</span>
               <span class="signal-read-badge approximate">approximate</span>
             </div>
-            <div class="signal-read-value" id="signal-val-refresh-rate">${refreshRateDisplay}</div>
+            <div class="signal-read-value">${refreshRateDisplay}</div>
             <div class="signal-read-source">Average requestAnimationFrame interval over 60 frames</div>
           </div>
 
-          <!-- Signal 2: Colour depth, HDR support & colour gamut -->
+          <!-- Colour & Display -->
           <div class="signal-read-card" aria-label="Colour and Display capabilities">
             <div class="signal-read-top">
               <span class="signal-read-name">Colour & Display</span>
@@ -948,38 +834,38 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
             <div class="signal-read-source">screen.colorDepth, matchMedia (dynamic-range: high), colour gamut</div>
           </div>
 
-          <!-- Signal 3a: Global Privacy Control -->
+          <!-- Global Privacy Control -->
           <div class="signal-read-card" aria-label="Global Privacy Control">
             <div class="signal-read-top">
               <span class="signal-read-name">Global Privacy Control</span>
-              <span class="signal-read-badge ${gpcStatus}">${gpcStatus}</span>
+              <span class="signal-read-badge ${gpcStatusClass}">${isGpcOn ? 'on' : 'unavailable'}</span>
             </div>
-            <div class="signal-read-value status-${gpcStatus}">${gpcStatus}</div>
-            <div class="signal-read-source">navigator.globalPrivacyControl (${gpcStatus})</div>
+            <div class="signal-read-value status-${gpcStatusClass}">${gpcDisplay}</div>
+            <div class="signal-read-source">navigator.globalPrivacyControl</div>
           </div>
 
-          <!-- Signal 3b: Do Not Track -->
+          <!-- Do Not Track -->
           <div class="signal-read-card" aria-label="Do Not Track">
             <div class="signal-read-top">
               <span class="signal-read-name">Do Not Track</span>
-              <span class="signal-read-badge ${dntStatus}">${dntStatus}</span>
+              <span class="signal-read-badge ${dntStatusClass}">${isDntOn ? 'on' : 'unavailable'}</span>
             </div>
-            <div class="signal-read-value status-${dntStatus}">${dntStatus}</div>
-            <div class="signal-read-source">navigator.doNotTrack (${dntStatus})</div>
+            <div class="signal-read-value status-${dntStatusClass}">${dntDisplay}</div>
+            <div class="signal-read-source">navigator.doNotTrack</div>
           </div>
 
-          <!-- Signal 4: Latency -->
-          <div class="signal-read-card" aria-label="Round-trip latency">
+          <!-- Latency -->
+          <div class="signal-read-card" aria-label="${latencyTitle}">
             <div class="signal-read-top">
-              <span class="signal-read-name">Latency</span>
-              <span class="signal-read-badge ${latencyTag === 'local test' ? 'local-test' : 'approximate'}">${latencyTag}</span>
+              <span class="signal-read-name">${latencyTitle}</span>
+              <span class="signal-read-badge approximate">${latencyTag}</span>
             </div>
             <div class="signal-read-value" id="signal-val-latency">${latencyDisplay}</div>
-            <div class="signal-read-source">5-sample median round-trip to /api/ping (${latencyTag})</div>
+            <div class="signal-read-source">5-sample median round-trip to /api/ping (approximate)</div>
           </div>
 
-          <!-- Signal 5: Identity Badge -->
-          <div class="signal-read-card" aria-label="Identity Badge">
+          <!-- Identity Badge Signal -->
+          <div class="signal-read-card" aria-label="Identity Badge Signal">
             <div class="signal-read-top">
               <span class="signal-read-name">Identity Badge</span>
               <span class="signal-read-badge read">read</span>
@@ -988,109 +874,334 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
             <div class="signal-read-source">${badge.rule}</div>
           </div>
 
-          <!-- Signal 6: Rare Archetypes -->
-          <div class="signal-read-card" aria-label="Rare Archetypes">
-            <div class="signal-read-top">
-              <span class="signal-read-name">Rare Card</span>
-              <span class="signal-read-badge ${rareCards.length ? 'read' : 'unavailable'}">${rareCards.length ? 'rare card' : 'none'}</span>
+          ${rareCards.length > 0 ? `
+            <!-- Rare Card -->
+            <div class="signal-read-card" aria-label="Rare Archetype">
+              <div class="signal-read-top">
+                <span class="signal-read-name">Rare Card</span>
+                <span class="signal-read-badge read">rare card</span>
+              </div>
+              <div class="signal-read-value">${rareCards.map(r => `${r.icon} ${r.title}`).join(', ')}</div>
+              <div class="signal-read-source">${rareCards.map(r => r.rule).join('; ')}</div>
             </div>
-            <div class="signal-read-value">${rareCards.length ? rareCards.map(r => `${r.icon} ${r.title}`).join(', ') : 'Standard profile'}</div>
-            <div class="signal-read-source">${rareCards.length ? rareCards.map(r => r.rule).join('; ') : 'Passive anomaly heuristics'}</div>
+          ` : ''}
+        </div>
+
+        <!-- GPU & Fingerprint Hash Cards -->
+        <div class="deep-signals-cards-row">
+          <!-- GPU Card -->
+          <div class="telemetry-card gpu-card" aria-label="Your graphics card">
+            <div class="telemetry-card-header">
+              <span class="telemetry-card-badge">WEBGL TELEMETRY</span>
+              <span class="telemetry-card-icon">🎮</span>
+            </div>
+            <h4 class="telemetry-card-title">Your graphics card</h4>
+            <div class="telemetry-card-value ${isGpuMasked ? 'is-masked' : ''}">
+              ${gpuDisplay}
+            </div>
+            <p class="telemetry-card-sub">
+              ${isGpuMasked ? 'Unmasked vendor & renderer hidden by your browser privacy protections.' : (fingerprint.gpuVendor ? `Vendor: ${fingerprint.gpuVendor}` : 'Extracted via WEBGL_debug_renderer_info')}
+            </p>
+          </div>
+
+          <!-- Fingerprint Hash Card -->
+          <div class="telemetry-card fp-hash-card" aria-label="Identity Signature">
+            <div class="telemetry-card-header">
+              <span class="telemetry-card-badge">PERSISTENT HASH</span>
+              <span class="telemetry-card-icon">🧬</span>
+            </div>
+            <h4 class="telemetry-card-title">Identity Signature</h4>
+            <p class="fp-card-statement">
+              Your fingerprint: <strong class="fp-hash-val">${fpHash}</strong>. Open this page in a private window. If the hash is the same, incognito didn't hide you.
+            </p>
+            <p class="telemetry-card-sub">
+              Combined from Canvas 2D + OfflineAudioContext + WebGL. Nothing is sent to any server.
+            </p>
           </div>
         </div>
       </div>
-
-      <!-- Why This Score List -->
-      <div class="why-score-container">
-        <h4 class="why-title">WHY THIS SCORE</h4>
-        <div class="breakdown-list">
-          ${breakdownHtml}
-        </div>
-      </div>
-
-      <!-- 3. Fix It Cards from AI Exposure Tips -->
-      <div class="fix-it-container">
-        <h4 class="fix-it-heading">FIX IT: MITIGATION PROTOCOLS</h4>
-        <div class="fix-it-grid">
-          ${fixItCardsHtml}
-        </div>
-      </div>
-
-      <!-- 4. Privacy Guarantee Note -->
-      <div class="privacy-note-card">
-        <span class="privacy-icon">🔒</span>
-        <p class="privacy-text">Nothing you saw here left your browser except a summary sent to write your fortune. We store nothing.</p>
-      </div>
-    </section>
-  `;
-
-  // Inject card into tarot-card-container
-  container.innerHTML = cardOnlyHtml;
-
-  // Inject dashboard into exposure-dashboard-container
-  const dashboardContainer = document.getElementById('exposure-dashboard-container');
-  if (dashboardContainer) {
-    dashboardContainer.innerHTML = dashboardHtml;
-  } else {
-    container.insertAdjacentHTML('beforeend', dashboardHtml);
+    `;
   }
 
-  // Trigger smooth gauge animation
+  // Tab 4: Try more (connection reveal & behaviour test)
+  const tabMoreEl = document.getElementById('tab-panel-more');
+  if (tabMoreEl) {
+    tabMoreEl.innerHTML = `
+      <div class="tab-panel-inner">
+        <div class="tab-panel-header">
+          <h4 class="tab-heading">INTERACTIVE DIAGNOSTICS</h4>
+          <p class="tab-sub">Optional audits that measure how your active interaction leaks identifiable telemetry.</p>
+        </div>
+
+        <div class="try-more-container">
+          <!-- Connection Revelation Card -->
+          <div class="telemetry-card connection-card" aria-label="Connection Revelation Audit">
+            <div class="telemetry-card-header">
+              <span class="telemetry-card-badge">OPT-IN REVELATION [approximate]</span>
+              <span class="telemetry-card-icon">🌐</span>
+            </div>
+            <h4 class="telemetry-card-title">Connection Geolocation</h4>
+            <p class="telemetry-card-sub" style="margin-bottom: 0.75rem;">
+              Query server edge routing headers to compare your connection country against your browser timezone.
+            </p>
+            <button id="btn-reveal-connection" class="cyber-btn tertiary connection-reveal-btn" type="button">
+              <span class="btn-icon">👁️</span> Show what my connection reveals
+            </button>
+            <div id="connection-reveal-result" class="connection-reveal-result hidden" aria-live="polite"></div>
+          </div>
+
+          <!-- 5-Second Behaviour Measurement Test -->
+          <div class="telemetry-card behaviour-card" aria-label="Behaviour Measurement Test">
+            <div class="telemetry-card-header">
+              <span class="telemetry-card-badge">BEHAVIOURAL BIOMETRICS</span>
+              <span class="telemetry-card-icon">⚡</span>
+            </div>
+            <h4 class="telemetry-card-title">Behaviour test</h4>
+            <p class="telemetry-card-sub" style="margin-bottom: 0.75rem;">
+              Move your mouse (or drag on touch) and type in the box during the 5-second countdown to see how passive biometrics profile you.
+            </p>
+
+            <div id="behaviour-test-idle">
+              <button id="btn-start-behaviour" class="cyber-btn tertiary behaviour-start-btn" type="button">
+                <span class="btn-icon">⏱️</span> Start 5-second test
+              </button>
+            </div>
+
+            <div id="behaviour-test-active" class="behaviour-test-active hidden">
+              <div class="behaviour-timer-row">
+                <span class="behaviour-timer-badge">COUNTDOWN</span>
+                <span id="behaviour-countdown" class="behaviour-countdown">5.0s</span>
+              </div>
+
+              <div id="behaviour-track-zone" class="behaviour-track-zone" tabindex="0">
+                <span id="track-zone-hint" class="track-zone-hint">Move mouse / drag pointer here</span>
+              </div>
+
+              <div id="behaviour-typing-area" class="behaviour-typing-area">
+                <label for="behaviour-input" class="behaviour-input-label">Type in the box:</label>
+                <input
+                  type="text"
+                  id="behaviour-input"
+                  class="behaviour-input"
+                  placeholder="Type anything here (e.g. quick brown fox)..."
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+              </div>
+              <div id="touch-skip-notice" class="touch-skip-notice hidden">
+                📱 Touch device: touch movement measured (typing skipped)
+              </div>
+            </div>
+
+            <div id="behaviour-test-results" class="behaviour-test-results hidden" aria-live="polite">
+              <div class="behaviour-metrics-grid">
+                <div class="behaviour-metric-item">
+                  <span id="lbl-mouse-speed" class="metric-label">Mouse Speed</span>
+                  <span id="metric-mouse-speed" class="metric-val">0 px/s</span>
+                </div>
+                <div class="behaviour-metric-item">
+                  <span class="metric-label">Pauses (&gt;300ms)</span>
+                  <span id="metric-pauses" class="metric-val">0</span>
+                </div>
+                <div class="behaviour-metric-item">
+                  <span class="metric-label">Typing Speed</span>
+                  <span id="metric-typing-speed" class="metric-val">0 chars/s</span>
+                </div>
+                <div class="behaviour-metric-item">
+                  <span class="metric-label">Avg Keystroke Gap</span>
+                  <span id="metric-keystroke-gap" class="metric-val">0 ms</span>
+                </div>
+              </div>
+
+              <p class="behaviour-quote">
+                "Websites can measure this without asking."
+              </p>
+              <div class="reveal-footnote">100% in-memory client-side • Text cleared • Nothing leaves the browser</div>
+              <!-- Test again button only appears after test has completed -->
+              <button id="btn-retry-behaviour" class="cyber-btn text-link retry-behaviour-btn" type="button">
+                ↺ Test again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Debug console injection
+  const debugContainer = document.getElementById('debug-container');
+  if (debugContainer) {
+    debugContainer.innerHTML = debugHtml;
+  }
+
+  // Initialize animations and interactive listeners
   animateGauge(score.score);
-
-  // Initialize opt-in connection reveal listener
+  initTabs();
   initConnectionReveal();
-
-  // Initialize 5-second behaviour measurement test
   initBehaviourTest(fingerprint);
-
-  // Initialize Story Slides Carousel & Action Controls
-  initStorySlidesControls(storySlides, storyDataUrls, fortune, score);
+  initShareModal({ canvas, storySlides, fortune, score, fingerprint });
 
   return canvas;
 }
 
 /**
- * Initializes story slide switching (dots, prev/next) and Download / Share actions
+ * Initializes tab switching for the 4 result tabs
  */
-function initStorySlidesControls(storySlides, storyDataUrls, fortune, score) {
-  let activeIndex = 0;
-  const storyImg = document.getElementById('story-rendered-image');
-  const counterTag = document.getElementById('story-counter-tag');
-  const btnPrev = document.getElementById('btn-story-prev');
-  const btnNext = document.getElementById('btn-story-next');
-  const dots = document.querySelectorAll('.story-dot-btn');
-  const btnDownloadSlides = document.getElementById('btn-download-slides');
-  const btnShareSlides = document.getElementById('btn-share-slides');
-  const feedbackEl = document.getElementById('story-feedback');
+function initTabs() {
+  const tabButtons = document.querySelectorAll('.tab-nav-btn');
+  const tabPanels = document.querySelectorAll('.result-tab-panel');
 
-  function updateSlide(idx) {
-    activeIndex = (idx + storyDataUrls.length) % storyDataUrls.length;
-    if (storyImg) {
-      storyImg.src = storyDataUrls[activeIndex];
-      storyImg.alt = `TrackMe Tarot Story Slide ${activeIndex + 1}`;
+  tabButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const tabKey = btn.getAttribute('data-tab');
+
+      // Update button states
+      tabButtons.forEach((b) => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+
+      // Update panel visibility
+      tabPanels.forEach((panel) => {
+        if (panel.id === `tab-panel-${tabKey}`) {
+          panel.classList.add('active');
+          panel.hidden = false;
+        } else {
+          panel.classList.remove('active');
+          panel.hidden = true;
+        }
+      });
+    });
+  });
+}
+
+/**
+ * Initializes the Share Modal and its 4-slide carousel (previews >= 320px wide)
+ */
+function initShareModal({ canvas, storySlides, fortune, score, fingerprint }) {
+  const modal = document.getElementById('share-modal');
+  const btnCloseModal = document.getElementById('btn-close-modal');
+  const modalImg = document.getElementById('modal-carousel-img');
+  const modalTitle = document.getElementById('modal-slide-title');
+  const modalCounter = document.getElementById('modal-slide-counter');
+  const btnPrev = document.getElementById('btn-modal-prev');
+  const btnNext = document.getElementById('btn-modal-next');
+  const modalDots = document.querySelectorAll('.modal-dot-btn');
+  const btnDownloadCurrent = document.getElementById('btn-modal-download-current');
+  const btnDownloadAll = document.getElementById('btn-modal-download-all');
+  const btnShareNative = document.getElementById('btn-modal-share-native');
+  const feedbackEl = document.getElementById('modal-feedback');
+
+  if (!modal || !modalImg) return;
+
+  const cleanArchetype = (fortune.archetype || 'tarot').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const feedDataUrl = canvas.toDataURL('image/png');
+  const storyDataUrls = storySlides.map((s) => s.toDataURL('image/png'));
+
+  const slidesData = [
+    {
+      title: 'Feed Card (1080×1350 HD)',
+      dataUrl: feedDataUrl,
+      canvas: canvas,
+      filename: `trackme-tarot-${cleanArchetype}.png`
+    },
+    {
+      title: 'Story Slide 1 • Arcanum (1080×1920)',
+      dataUrl: storyDataUrls[0],
+      canvas: storySlides[0],
+      filename: `trackme-story-${cleanArchetype}-slide-1.png`
+    },
+    {
+      title: 'Story Slide 2 • Exposure & Badge (1080×1920)',
+      dataUrl: storyDataUrls[1],
+      canvas: storySlides[1],
+      filename: `trackme-story-${cleanArchetype}-slide-2.png`
+    },
+    {
+      title: 'Story Slide 3 • Prophecy (1080×1920)',
+      dataUrl: storyDataUrls[2],
+      canvas: storySlides[2],
+      filename: `trackme-story-${cleanArchetype}-slide-3.png`
     }
-    if (counterTag) {
-      counterTag.textContent = `${activeIndex + 1} / ${storyDataUrls.length}`;
-    }
-    dots.forEach((dot, dIdx) => {
-      dot.classList.toggle('active', dIdx === activeIndex);
+  ];
+
+  let currentSlideIndex = 0;
+
+  function renderModalSlide(index) {
+    currentSlideIndex = (index + slidesData.length) % slidesData.length;
+    const current = slidesData[currentSlideIndex];
+
+    modalImg.src = current.dataUrl;
+    modalImg.alt = current.title;
+
+    if (modalTitle) modalTitle.textContent = current.title;
+    if (modalCounter) modalCounter.textContent = `${currentSlideIndex + 1} of ${slidesData.length}`;
+
+    modalDots.forEach((dot, dIdx) => {
+      dot.classList.toggle('active', dIdx === currentSlideIndex);
     });
   }
 
-  btnPrev?.addEventListener('click', () => updateSlide(activeIndex - 1));
-  btnNext?.addEventListener('click', () => updateSlide(activeIndex + 1));
-  dots.forEach((dot) => {
+  // Initial preview render
+  renderModalSlide(0);
+
+  // Carousel navigation
+  btnPrev?.addEventListener('click', () => renderModalSlide(currentSlideIndex - 1));
+  btnNext?.addEventListener('click', () => renderModalSlide(currentSlideIndex + 1));
+
+  modalDots.forEach((dot) => {
     dot.addEventListener('click', () => {
-      const targetIdx = Number(dot.getAttribute('data-slide') || 0);
-      updateSlide(targetIdx);
+      const idx = Number(dot.getAttribute('data-slide') || 0);
+      renderModalSlide(idx);
     });
   });
 
-  // "Download slides" (three PNGs)
-  btnDownloadSlides?.addEventListener('click', () => {
-    const cleanTitle = (fortune.archetype || 'tarot').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    downloadStorySlides(storySlides, `trackme-story-${cleanTitle}`);
+  // Modal open function
+  function openModal() {
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    renderModalSlide(currentSlideIndex);
+  }
+
+  // Modal close function
+  function closeModal() {
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  // Wire Share button to open modal
+  const btnShareMain = document.getElementById('btn-share');
+  btnShareMain?.addEventListener('click', openModal);
+
+  // Wire close triggers
+  btnCloseModal?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+      closeModal();
+    }
+  });
+
+  // Modal download current image
+  btnDownloadCurrent?.addEventListener('click', () => {
+    const current = slidesData[currentSlideIndex];
+    downloadTarotCardImage(current.canvas, current.filename);
+    if (feedbackEl) {
+      feedbackEl.textContent = `Downloaded ${current.title}!`;
+      feedbackEl.classList.remove('hidden');
+      setTimeout(() => feedbackEl.classList.add('hidden'), 2500);
+    }
+  });
+
+  // Modal download all story slides
+  btnDownloadAll?.addEventListener('click', () => {
+    downloadStorySlides(storySlides, `trackme-story-${cleanArchetype}`);
     if (feedbackEl) {
       feedbackEl.textContent = 'Downloading all 3 Story slides (1080×1920)...';
       feedbackEl.classList.remove('hidden');
@@ -1098,14 +1209,21 @@ function initStorySlidesControls(storySlides, storyDataUrls, fortune, score) {
     }
   });
 
-  // "Share" using Web Share API with files when supported, falling back to downloading
-  btnShareSlides?.addEventListener('click', async () => {
-    const res = await shareStorySlides({ slides: storySlides, fortune, score });
+  // Modal native share
+  btnShareNative?.addEventListener('click', async () => {
+    const current = slidesData[currentSlideIndex];
+    const res = await shareTarotReading({
+      fortune,
+      fingerprint,
+      score,
+      canvas: current.canvas
+    });
+
     if (feedbackEl) {
-      if (res.shared) {
-        feedbackEl.textContent = 'Story slides shared successfully!';
-      } else {
-        feedbackEl.textContent = 'Downloaded 3 Story slides for sharing!';
+      if (res.method === 'clipboard') {
+        feedbackEl.textContent = 'Prophecy text copied to clipboard!';
+      } else if (res.shared) {
+        feedbackEl.textContent = 'Shared successfully!';
       }
       feedbackEl.classList.remove('hidden');
       setTimeout(() => feedbackEl.classList.add('hidden'), 2500);

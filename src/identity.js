@@ -145,16 +145,13 @@ export function determineIdentityBadge(signals = {}) {
     };
   }
 
-  // 2. The Data Royal (16+ CPU cores or 8+ GB RAM, and many tested fonts installed: >= 10)
-  if ((s.cores >= 16 || s.memoryGb >= 8) && s.fontsCount >= 10) {
-    const hwSpec = s.cores >= 16 && s.memoryGb >= 8
-      ? '16 or more CPU cores and 8 GB or more memory'
-      : (s.cores >= 16 ? '16 or more CPU cores' : '8 GB or more memory');
+  // 2. The Data Royal (12+ CPU cores AND 20+ tested fonts installed, memory dropped)
+  if (s.cores >= 12 && s.fontsCount >= 20) {
     return {
       id: 'data-royal',
       name: 'The Data Royal',
       icon: '👑',
-      rule: `You got this because your system reported ${hwSpec}, and many of the tested fonts installed.`
+      rule: 'You got this because your system reported 12 or more CPU cores and 20 or more tested fonts installed.'
     };
   }
 

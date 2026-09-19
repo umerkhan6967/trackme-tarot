@@ -31,28 +31,39 @@ describe('Identity Badges Evaluation', () => {
     expect(badgeGpc.name).toBe('The Privacy Monk');
   });
 
-  it('assigns "The Data Royal" when 16+ cores or 8+ GB RAM and many tested fonts installed', () => {
-    const signals16Cores = {
+  it('assigns "The Data Royal" when 12+ CPU cores AND 20+ tested fonts installed (memory dropped)', () => {
+    const signalsMatching = {
       privacy: { dnt: 'off', adBlockerDetected: false, cookiesEnabled: true },
-      hardware: { cores: 16, deviceMemory: '4GB' },
-      fonts: { installedCount: 14 },
+      hardware: { cores: 12, deviceMemory: '4GB' },
+      fonts: { installedCount: 20 },
       temporal: { localHour: 12 },
       preferences: { touchSupport: false }
     };
-    const badgeCores = determineIdentityBadge(signals16Cores);
-    expect(badgeCores.name).toBe('The Data Royal');
-    expect(badgeCores.rule).toContain('16 or more CPU cores');
-    expect(badgeCores.rule).toContain('tested fonts installed');
+    const badge = determineIdentityBadge(signalsMatching);
+    expect(badge.name).toBe('The Data Royal');
+    expect(badge.rule).toContain('12 or more CPU cores');
+    expect(badge.rule).toContain('20 or more tested fonts installed');
+    expect(badge.rule).not.toContain('memory');
 
-    const signals8Gb = {
+    // Not enough fonts (< 20)
+    const signalsNotEnoughFonts = {
       privacy: { dnt: 'off', adBlockerDetected: false, cookiesEnabled: true },
-      hardware: { cores: 8, deviceMemory: '8GB' },
-      fonts: { installedCount: 10 },
+      hardware: { cores: 16, deviceMemory: '32GB' },
+      fonts: { installedCount: 19 },
       temporal: { localHour: 12 },
       preferences: { touchSupport: false }
     };
-    const badgeRam = determineIdentityBadge(signals8Gb);
-    expect(badgeRam.name).toBe('The Data Royal');
+    expect(determineIdentityBadge(signalsNotEnoughFonts).name).not.toBe('The Data Royal');
+
+    // Not enough cores (< 12)
+    const signalsNotEnoughCores = {
+      privacy: { dnt: 'off', adBlockerDetected: false, cookiesEnabled: true },
+      hardware: { cores: 8, deviceMemory: '32GB' },
+      fonts: { installedCount: 25 },
+      temporal: { localHour: 12 },
+      preferences: { touchSupport: false }
+    };
+    expect(determineIdentityBadge(signalsNotEnoughCores).name).not.toBe('The Data Royal');
   });
 
   it('assigns "The Night Owl" when local hour is between 0 and 4', () => {

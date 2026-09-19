@@ -183,12 +183,10 @@ async function startScanningSequence(selectedTheme = 'Destiny & device memory') 
     // Clear scanning aria-busy
     screenScanning?.setAttribute('aria-busy', 'false');
 
-    // Render 1080x1350 Card Canvas and switch screen
-    currentCanvas = renderTarotCard(cardContainer, currentReading);
+    // Render Tarot Card and initialize result screen
+    const resultWrapper = document.querySelector('.result-wrapper');
+    currentCanvas = renderTarotCard(resultWrapper, currentReading);
     updateSocialLinks();
-
-    // Add card flip animation class
-    cardContainer?.classList.add('card-flip-in');
 
     switchScreen(screenResult);
 
@@ -256,9 +254,14 @@ function initApp() {
     });
   });
 
-  // "Read again" action — reset flip animation and return to landing
+  // "Read again" action — reset and return to landing
   btnRescan?.addEventListener('click', () => {
-    cardContainer?.classList.remove('card-flip-in');
+    const modal = document.getElementById('share-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
     const gaugeWrapper = document.querySelector('.gauge-svg-wrapper');
     gaugeWrapper?.classList.remove('gauge-pulse');
     btnStart?.classList.remove('hidden');
@@ -275,23 +278,6 @@ function initApp() {
       .replace(/[^a-z0-9]+/g, '-');
     downloadTarotCardImage(currentCanvas, `trackme-tarot-${cleanTitle}.png`);
     showFeedback('Card image downloaded (1080×1350 HD)!');
-  });
-
-  // "Share" action (Web Share API with fallback to copy link)
-  btnShare?.addEventListener('click', async () => {
-    if (!currentReading) return;
-    const res = await shareTarotReading({
-      fortune: currentReading.fortune,
-      fingerprint: currentReading.fingerprint,
-      score: currentReading.score,
-      canvas: currentCanvas
-    });
-
-    if (res.method === 'clipboard') {
-      showFeedback('Prophecy text copied for sharing!');
-    } else if (res.shared) {
-      showFeedback('Shared successfully!');
-    }
   });
 
   // Copy text shortcut

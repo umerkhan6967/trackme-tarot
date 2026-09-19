@@ -120,51 +120,118 @@
     <!-- Screen 3: Tarot Result -->
     <section id="screen-result" class="screen hidden">
       <div class="result-wrapper">
+        <!-- 1. Top: Gemini/Offline badge small above the spread -->
         <header class="result-header">
-          <div class="oracle-badge">&gt; ARCANUM COMPUTED</div>
+          <div id="result-origin-badge" class="oracle-badge-small">&gt; ARCANUM COMPUTED</div>
           <h2 class="result-heading" aria-live="assertive">YOUR DIGITAL REVELATION</h2>
         </header>
 
-        <!-- 3-Card Tarot Spread Triptych Container -->
+        <!-- 3-Card Tarot Spread Triptych Container (body text >= 15px, rare card banner only if triggered) -->
         <div id="tarot-spread-container" class="tarot-spread-container" aria-label="Three card tarot spread"></div>
 
-        <div class="result-grid">
-          <!-- Left Column: Sticky Card + Action Buttons -->
-          <div class="result-left-column">
-            <!-- Tarot Card Container (populated with card canvas by card.js) -->
-            <div id="tarot-card-container" class="tarot-card-container"></div>
+        <!-- 2. Directly under it, one row: exposure gauge on left, identity badge on right -->
+        <div class="result-middle-row" id="result-middle-row" aria-label="Exposure Score & Identity Badge">
+          <div class="middle-left-gauge" id="middle-gauge-col"></div>
+          <div class="middle-right-badge" id="middle-badge-col"></div>
+        </div>
 
-            <!-- Action Controls directly under the card -->
-            <div class="result-actions">
-              <button id="btn-download" class="cyber-btn primary" type="button">
-                <span class="icon">📥</span> DOWNLOAD IMAGE
-              </button>
-              <button id="btn-share" class="cyber-btn secondary" type="button">
-                <span class="icon">🔗</span> SHARE
-              </button>
-              <button id="btn-rescan" class="cyber-btn tertiary" type="button">
-                <span class="icon">↺</span> READ AGAIN
-              </button>
-            </div>
+        <!-- 3. Sticky Action Bar: three buttons only: Download image, Share, Read again -->
+        <div class="sticky-action-bar" id="sticky-action-bar" aria-label="Reading Actions">
+          <button id="btn-download" class="cyber-btn primary action-bar-btn" type="button">
+            <span class="icon">📥</span> Download image
+          </button>
+          <button id="btn-share" class="cyber-btn secondary action-bar-btn" type="button">
+            <span class="icon">🔗</span> Share
+          </button>
+          <button id="btn-rescan" class="cyber-btn tertiary action-bar-btn" type="button">
+            <span class="icon">↺</span> Read again
+          </button>
+        </div>
+        <div id="copy-feedback" class="copy-feedback hidden" aria-live="polite"></div>
 
-            <!-- Direct Social Shortcuts -->
-            <div class="social-share-bar">
-              <span class="social-label">QUICK SHARE:</span>
-              <a id="share-whatsapp" class="social-chip whatsapp" target="_blank" rel="noopener noreferrer" href="#">
-                <span>💬</span> WhatsApp
-              </a>
-              <a id="share-linkedin" class="social-chip linkedin" target="_blank" rel="noopener noreferrer" href="#">
-                <span>💼</span> LinkedIn
-              </a>
-              <button id="btn-copy-link" class="social-chip copy" type="button">
-                <span>📋</span> Copy Text
-              </button>
-            </div>
-            <div id="copy-feedback" class="copy-feedback hidden">Prophecy copied to clipboard!</div>
+        <!-- 4. Tab Bar with 4 tabs (only one visible at a time) -->
+        <div class="result-tabs-container" id="result-tabs-container">
+          <div class="result-tabs-nav" role="tablist" aria-label="Result details tabs">
+            <button class="tab-nav-btn active" id="tab-btn-why" role="tab" aria-selected="true" aria-controls="tab-panel-why" data-tab="why">
+              Why this score
+            </button>
+            <button class="tab-nav-btn" id="tab-btn-fix" role="tab" aria-selected="false" aria-controls="tab-panel-fix" data-tab="fix">
+              Fix it
+            </button>
+            <button class="tab-nav-btn" id="tab-btn-signals" role="tab" aria-selected="false" aria-controls="tab-panel-signals" data-tab="signals">
+              What we read
+            </button>
+            <button class="tab-nav-btn" id="tab-btn-more" role="tab" aria-selected="false" aria-controls="tab-panel-more" data-tab="more">
+              Try more
+            </button>
           </div>
 
-          <!-- Right Column: Score, Gauge & Breakdown -->
-          <div id="exposure-dashboard-container" class="result-right-column"></div>
+          <div class="result-tabs-panels">
+            <!-- Tab 1: Why this score (breakdown list) -->
+            <div class="result-tab-panel active" id="tab-panel-why" role="tabpanel" aria-labelledby="tab-btn-why"></div>
+
+            <!-- Tab 2: Fix it (three fix cards) -->
+            <div class="result-tab-panel" id="tab-panel-fix" role="tabpanel" aria-labelledby="tab-btn-fix" hidden></div>
+
+            <!-- Tab 3: What we read (signals list, GPU card, fingerprint hash card) -->
+            <div class="result-tab-panel" id="tab-panel-signals" role="tabpanel" aria-labelledby="tab-btn-signals" hidden></div>
+
+            <!-- Tab 4: Try more (connection reveal, behaviour test) -->
+            <div class="result-tab-panel" id="tab-panel-more" role="tabpanel" aria-labelledby="tab-btn-more" hidden></div>
+          </div>
+        </div>
+
+        <div id="debug-container"></div>
+      </div>
+
+      <!-- 5. Share Previews Modal (opened by Share button, one carousel with previews >= 320px wide) -->
+      <div id="share-modal" class="share-modal-backdrop hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Share Reading Previews">
+        <div class="share-modal-dialog">
+          <div class="share-modal-header">
+            <div class="modal-header-left">
+              <span class="modal-tag">&gt; ARCANUM EXPORT</span>
+              <h3 class="modal-title">Share Your Divination</h3>
+            </div>
+            <button id="btn-close-modal" class="modal-close-btn" type="button" aria-label="Close share modal">&times;</button>
+          </div>
+
+          <div class="share-modal-body">
+            <div class="modal-carousel-container">
+              <button id="btn-modal-prev" class="modal-arrow-btn" type="button" aria-label="Previous preview slide">&#8249;</button>
+              <div class="modal-slide-stage">
+                <div class="modal-slide-viewer" id="modal-slide-viewer">
+                  <!-- Preview image dynamically updated (>= 320px wide) -->
+                  <img id="modal-carousel-img" class="modal-carousel-img" src="" alt="Share Preview" />
+                </div>
+                <div class="modal-slide-caption">
+                  <span id="modal-slide-title" class="modal-slide-title">Feed Card (1080×1350)</span>
+                  <span id="modal-slide-counter" class="modal-slide-counter">1 of 4</span>
+                </div>
+                <div class="modal-dots-row" id="modal-dots-row">
+                  <button class="modal-dot-btn active" data-slide="0" aria-label="Preview 1: Feed Card"></button>
+                  <button class="modal-dot-btn" data-slide="1" aria-label="Preview 2: Story Slide 1"></button>
+                  <button class="modal-dot-btn" data-slide="2" aria-label="Preview 3: Story Slide 2"></button>
+                  <button class="modal-dot-btn" data-slide="3" aria-label="Preview 4: Story Slide 3"></button>
+                </div>
+              </div>
+              <button id="btn-modal-next" class="modal-arrow-btn" type="button" aria-label="Next preview slide">&#8250;</button>
+            </div>
+          </div>
+
+          <div class="share-modal-footer">
+            <div class="modal-action-buttons">
+              <button id="btn-modal-download-current" class="cyber-btn primary modal-btn" type="button">
+                <span class="icon">📥</span> Download this image
+              </button>
+              <button id="btn-modal-download-all" class="cyber-btn tertiary modal-btn" type="button">
+                <span class="icon">📦</span> Download all story slides
+              </button>
+              <button id="btn-modal-share-native" class="cyber-btn secondary modal-btn" type="button">
+                <span class="icon">🔗</span> Share via...
+              </button>
+            </div>
+            <div id="modal-feedback" class="copy-feedback hidden"></div>
+          </div>
         </div>
       </div>
     </section>

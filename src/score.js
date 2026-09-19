@@ -45,7 +45,7 @@ export function calculateExposureScore(data) {
     breakdown.push({
       label: 'Distinctive Font Matrix',
       points: `+${points}`,
-      why: `${fontCount} system fonts detected, isolating your profile into a narrow demographic slice.`
+      why: `${fontCount} system fonts detected, creating a distinctive profile that can help identify your browser across visits.`
     });
   } else if (fontCount >= 8) {
     const points = 7;
@@ -77,7 +77,7 @@ export function calculateExposureScore(data) {
     breakdown.push({
       label: 'Live Battery Telemetry',
       points: `+${points}`,
-      why: 'Real-time battery percentage and charging status allow cross-tab session stitching.'
+      why: 'Battery level and charging state can be combined with other signals to recognise a device across browsing sessions.'
     });
   }
 
@@ -148,7 +148,7 @@ export function calculateExposureScore(data) {
     breakdown.push({
       label: 'Network Telemetry API',
       points: `+${points}`,
-      why: 'Effective connection speed and latency reveal ISP transport characteristics.'
+      why: 'Effective connection speed and latency can be used to estimate network type and general connection quality.'
     });
   }
 

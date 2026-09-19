@@ -374,7 +374,7 @@ export function generateLocal3CardFortune(signals, score, theme = 'Destiny & dev
   // Default theme: "Destiny & device memory"
   const card1Phrasings = [
     `The silicon oracle reads your ${memory} memory and ${cores} CPU threads: you push hardware to cosmic limits through pure tab hoarding and sheer willpower.`,
-    `Your ${res} screen resolution at ${refreshRate} and ${os} platform reveal a digital voyager whose hardware signature is permanently etched into server logs.`,
+    `Your ${res} screen resolution at ${refreshRate} and ${os} platform reveal a digital voyager whose hardware profile is easily recognisable across the web.`,
     `With ${cores} execution cores running in ${lang}, the cosmic network recognizes your hardware footprint across billions of concurrent connections.`
   ];
 
@@ -414,7 +414,7 @@ export function generateLocal3CardFortune(signals, score, theme = 'Destiny & dev
     prediction: 'Tomorrow at midday your cooling fan will spin up for four seconds for absolutely no discernible reason.',
     exposure_tips: [
       'Enable strict tracking prevention in your browser configuration.',
-      'Regularly close dormant tabs to release device memory and stop background pings.',
+      'Use a browser or extension that blocks fingerprinting scripts.',
       'Keep your operating system updated to patch exposed hardware telemetry vectors.'
     ],
     source: 'fallback',

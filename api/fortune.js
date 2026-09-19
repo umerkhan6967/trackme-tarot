@@ -70,6 +70,15 @@ function extractAllowedNumbers(signals, score) {
     signals.rareCards.forEach(r => addMatches(r.rule));
   }
 
+  // Relax digit checks for real display facts, resolutions, refresh rates & calendar years
+  const realFacts = [
+    '24', '30', '32', '60', '75', '90', '120', '144', '165', '240', '360',
+    '375', '390', '414', '430', '667', '720', '768', '844', '864', '896', '932',
+    '1080', '1280', '1350', '1366', '1440', '1536', '1920', '2160', '2560', '3840',
+    '100', '2024', '2025', '2026', '2027'
+  ];
+  realFacts.forEach(rf => allowed.add(rf));
+
   return allowed;
 }
 
@@ -109,7 +118,9 @@ function validateFortuneOutput(output, allowedNumbers) {
   const numbersFound = allText.match(/\d+/g) || [];
   for (const num of numbersFound) {
     if (num.length > 1 && !allowedNumbers.has(num)) {
-      return { valid: false, reason: `Invented number not in facts: "${num}"` };
+      const reason = `Invented number not in facts: "${num}"`;
+      console.warn(`[Validation Rule Failed: Digit Check] Number: "${num}" not in allowed facts.`, { allowed: Array.from(allowedNumbers) });
+      return { valid: false, reason, rule: 'digit_check', failedValue: num };
     }
   }
 
@@ -236,7 +247,7 @@ export function generateLocal3CardFortune(signals, score, theme = 'Destiny & dev
   // Default theme: "Destiny & device memory"
   const card1Phrasings = [
     `The silicon oracle reads your ${memory} memory and ${cores} CPU threads: you push hardware to cosmic limits through pure tab hoarding and sheer willpower.`,
-    `Your ${res} screen resolution at ${refreshRate} and ${os} platform reveal a digital voyager whose hardware signature is permanently etched into server logs.`,
+    `Your ${res} screen resolution at ${refreshRate} and ${os} platform reveal a digital voyager whose hardware profile is easily recognisable across the web.`,
     `With ${cores} execution cores running in ${lang}, the cosmic network recognizes your hardware footprint across billions of concurrent connections.`
   ];
 
@@ -276,7 +287,7 @@ export function generateLocal3CardFortune(signals, score, theme = 'Destiny & dev
     prediction: 'Tomorrow at midday your cooling fan will spin up for four seconds for absolutely no discernible reason.',
     exposure_tips: [
       'Enable strict tracking prevention in your browser configuration.',
-      'Regularly close dormant tabs to release device memory and stop background pings.',
+      'Use a browser or extension that blocks fingerprinting scripts.',
       'Keep your operating system updated to patch exposed hardware telemetry vectors.'
     ],
     source: 'fallback',
@@ -477,5 +488,9 @@ Generate their 3-card spread in valid JSON format:`;
   fallback.rareCards = rareCards;
   fallback.errorStatus = lastStatus;
   fallback.errorMessage = lastErrorText;
+  fallback.validationFailureReason = lastErrorText.includes('Validation failed')
+    ? lastErrorText.replace('Validation failed: ', '')
+    : null;
+  fallback.model = modelChain[0] || 'gemini-2.5-flash';
   return res.status(200).json(fallback);
 }
