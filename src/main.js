@@ -70,7 +70,7 @@ function setButtonLoading(loading) {
   } else {
     btnStart.classList.remove('loading');
     btnStart.setAttribute('aria-busy', 'false');
-    if (textEl) textEl.textContent = '⚡ READ MY FORTUNE ⚡';
+    if (textEl) textEl.textContent = '⚡ FIND MY FORTUNE ⚡';
     if (subEl) subEl.textContent = '> INITIATE TELEMETRY PROBE';
   }
 }
