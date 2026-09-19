@@ -8,6 +8,9 @@
  * Supports instant image downloads and multi-platform sharing (WhatsApp, LinkedIn, Web Share API).
  */
 
+import { generateAllStorySlides, downloadStorySlides, shareStorySlides } from './storySlides.js';
+export { generateAllStorySlides, downloadStorySlides, shareStorySlides };
+
 /**
  * Wraps text onto a canvas context across multiple lines.
  */
@@ -452,6 +455,10 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   const canvas = generateTarotCardCanvas({ fortune, fingerprint, score });
   const dataUrl = canvas.toDataURL('image/png');
 
+  // Generate 1080x1920 vertical Story slides (3 slides)
+  const storySlides = generateAllStorySlides({ fortune, fingerprint, score });
+  const storyDataUrls = storySlides.map(s => s.toDataURL('image/png'));
+
   const isGemini = fortune.source === 'gemini';
   const badgeLabel = isGemini ? '✦ Written live by Gemini AI' : 'Offline mode';
   const oracleBadgeText = `<span class="${isGemini ? 'ai-badge' : 'offline-badge'}">${badgeLabel}</span>`;
@@ -647,18 +654,56 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
     spreadContainer.innerHTML = spreadHtml;
   }
 
-  // 2. High-Res 1080x1350 Tarot Canvas Preview Card (Left Column)
+  // 2. High-Res 1080x1350 Tarot Canvas Preview Card + 1080x1920 Story Slides (Side-by-Side)
   const cardOnlyHtml = `
-    <article class="tarot-card-canvas-wrap" id="active-tarot-card" aria-label="Shareable 3-Card Tarot Card">
-      <div class="card-preview-header">
-        <span class="preview-tag">SHAREABLE 3-CARD TRIPTYCH</span>
-        <span class="preview-origin">${oracleBadgeText}</span>
-        <span class="preview-res">1080×1350 HD</span>
-      </div>
-      <div class="canvas-image-container">
-        <img class="tarot-canvas-img" src="${dataUrl}" alt="TrackMe Tarot 3-Card Spread - ${cards[0].archetype}, ${cards[1].archetype}, ${cards[2].archetype}" id="tarot-rendered-image" />
-      </div>
-    </article>
+    <div class="share-formats-container" aria-label="Shareable Card and Vertical Story Slides">
+      <!-- Format 1: 1080x1350 Feed Card Preview -->
+      <article class="tarot-card-canvas-wrap format-card-box" id="active-tarot-card" aria-label="Shareable 3-Card Tarot Card">
+        <div class="card-preview-header">
+          <span class="preview-tag">FEED CARD (1080×1350)</span>
+          <span class="preview-origin">${oracleBadgeText}</span>
+          <span class="preview-res">POST</span>
+        </div>
+        <div class="canvas-image-container">
+          <img class="tarot-canvas-img" src="${dataUrl}" alt="TrackMe Tarot 3-Card Spread - ${cards[0].archetype}, ${cards[1].archetype}, ${cards[2].archetype}" id="tarot-rendered-image" />
+        </div>
+      </article>
+
+      <!-- Format 2: 1080x1920 Story-Style Share Slides next to the existing card -->
+      <article class="story-slides-preview-wrap format-story-box" id="active-story-slides" aria-label="Story-Style Share Slides (1080x1920)">
+        <div class="card-preview-header">
+          <span class="preview-tag story-tag">STORY SLIDES (1080×1920)</span>
+          <span class="preview-origin">${oracleBadgeText}</span>
+          <span class="preview-res">9:16 VERTICAL</span>
+        </div>
+        <div class="story-slide-viewer">
+          <div class="story-image-container">
+            <img class="story-canvas-img" src="${storyDataUrls[0]}" alt="TrackMe Tarot Story Slide 1" id="story-rendered-image" />
+          </div>
+          <div class="story-slide-nav">
+            <button id="btn-story-prev" class="story-arrow-btn" type="button" aria-label="Previous story slide">‹</button>
+            <div class="story-dots-row" id="story-dots-row">
+              <button class="story-dot-btn active" data-slide="0" aria-label="Slide 1: Archetype"></button>
+              <button class="story-dot-btn" data-slide="1" aria-label="Slide 2: Exposure & Badge"></button>
+              <button class="story-dot-btn" data-slide="2" aria-label="Slide 3: Prophecy"></button>
+            </div>
+            <span class="story-counter-tag" id="story-counter-tag">1 / 3</span>
+            <button id="btn-story-next" class="story-arrow-btn" type="button" aria-label="Next story slide">›</button>
+          </div>
+        </div>
+
+        <!-- Story Action Controls -->
+        <div class="story-actions-bar">
+          <button id="btn-download-slides" class="cyber-btn primary story-btn" type="button">
+            <span class="icon">📥</span> Download slides
+          </button>
+          <button id="btn-share-slides" class="cyber-btn secondary story-btn" type="button">
+            <span class="icon">🔗</span> Share
+          </button>
+        </div>
+        <div id="story-feedback" class="copy-feedback hidden"></div>
+      </article>
+    </div>
     ${debugHtml}
   `;
 
@@ -999,7 +1044,73 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   // Initialize 5-second behaviour measurement test
   initBehaviourTest(fingerprint);
 
+  // Initialize Story Slides Carousel & Action Controls
+  initStorySlidesControls(storySlides, storyDataUrls, fortune, score);
+
   return canvas;
+}
+
+/**
+ * Initializes story slide switching (dots, prev/next) and Download / Share actions
+ */
+function initStorySlidesControls(storySlides, storyDataUrls, fortune, score) {
+  let activeIndex = 0;
+  const storyImg = document.getElementById('story-rendered-image');
+  const counterTag = document.getElementById('story-counter-tag');
+  const btnPrev = document.getElementById('btn-story-prev');
+  const btnNext = document.getElementById('btn-story-next');
+  const dots = document.querySelectorAll('.story-dot-btn');
+  const btnDownloadSlides = document.getElementById('btn-download-slides');
+  const btnShareSlides = document.getElementById('btn-share-slides');
+  const feedbackEl = document.getElementById('story-feedback');
+
+  function updateSlide(idx) {
+    activeIndex = (idx + storyDataUrls.length) % storyDataUrls.length;
+    if (storyImg) {
+      storyImg.src = storyDataUrls[activeIndex];
+      storyImg.alt = `TrackMe Tarot Story Slide ${activeIndex + 1}`;
+    }
+    if (counterTag) {
+      counterTag.textContent = `${activeIndex + 1} / ${storyDataUrls.length}`;
+    }
+    dots.forEach((dot, dIdx) => {
+      dot.classList.toggle('active', dIdx === activeIndex);
+    });
+  }
+
+  btnPrev?.addEventListener('click', () => updateSlide(activeIndex - 1));
+  btnNext?.addEventListener('click', () => updateSlide(activeIndex + 1));
+  dots.forEach((dot) => {
+    dot.addEventListener('click', () => {
+      const targetIdx = Number(dot.getAttribute('data-slide') || 0);
+      updateSlide(targetIdx);
+    });
+  });
+
+  // "Download slides" (three PNGs)
+  btnDownloadSlides?.addEventListener('click', () => {
+    const cleanTitle = (fortune.archetype || 'tarot').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    downloadStorySlides(storySlides, `trackme-story-${cleanTitle}`);
+    if (feedbackEl) {
+      feedbackEl.textContent = 'Downloading all 3 Story slides (1080×1920)...';
+      feedbackEl.classList.remove('hidden');
+      setTimeout(() => feedbackEl.classList.add('hidden'), 2500);
+    }
+  });
+
+  // "Share" using Web Share API with files when supported, falling back to downloading
+  btnShareSlides?.addEventListener('click', async () => {
+    const res = await shareStorySlides({ slides: storySlides, fortune, score });
+    if (feedbackEl) {
+      if (res.shared) {
+        feedbackEl.textContent = 'Story slides shared successfully!';
+      } else {
+        feedbackEl.textContent = 'Downloaded 3 Story slides for sharing!';
+      }
+      feedbackEl.classList.remove('hidden');
+      setTimeout(() => feedbackEl.classList.add('hidden'), 2500);
+    }
+  });
 }
 
 /**
