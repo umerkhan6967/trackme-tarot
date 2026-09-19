@@ -2214,7 +2214,20 @@ function initOracleChat(fingerprint, score) {
       }
     }
 
-    // Sources
+    // Tier tag — adapt label for ungrounded Tier 2
+    if (role !== 'user' && opts.tier) {
+      if (opts.tier === 'scan') {
+        tierTagHtml = `<span class="oracle-tier-tag oracle-tier-scan">From your scan</span>`;
+      } else if (opts.tier === 'privacy_security') {
+        const label = opts.groundingNote ? 'General knowledge, no sources' : 'General knowledge, with sources';
+        tierTagHtml = `<span class="oracle-tier-tag oracle-tier-web">${label}</span>`;
+      } else if (opts.tier === 'harmful') {
+        tierTagHtml = `<span class="oracle-tier-tag oracle-tier-refused">Request declined</span>`;
+      } else if (opts.tier === 'other') {
+        tierTagHtml = `<span class="oracle-tier-tag oracle-tier-other">Out of scope</span>`;
+      }
+    }
+    // Sources + grounding note
     let sourcesHtml = '';
     if (opts.sources && opts.sources.length > 0) {
       const validSources = opts.sources.filter(s => s.url && s.title);
@@ -2229,6 +2242,10 @@ function initOracleChat(fingerprint, score) {
             </ul>
           </div>`;
       }
+    }
+    // No-grounding note for Tier 2 fallback
+    if (opts.groundingNote) {
+      sourcesHtml += `<p class="oracle-grounding-note">⚠️ ${escapeHtml(opts.groundingNote)}</p>`;
     }
 
     // Chips re-shown on Tier 3 rejections
@@ -2297,6 +2314,8 @@ function initOracleChat(fingerprint, score) {
     // Show loading indicator
     const loadingEl = appendLoadingMessage();
 
+    const isDebug = new URLSearchParams(window.location.search).get('debug') === '1';
+
     try {
       const response = await fetch('/api/oracle', {
         method: 'POST',
@@ -2304,7 +2323,8 @@ function initOracleChat(fingerprint, score) {
         body: JSON.stringify({
           question: trimmed,
           facts,
-          history: chatHistory.slice(-4)
+          history: chatHistory.slice(-4),
+          debug: isDebug
         })
       });
 
@@ -2312,27 +2332,70 @@ function initOracleChat(fingerprint, score) {
 
       if (response.ok) {
         const data = await response.json();
-        const answer = data.answer || 'The Oracle perceives an ethereal blankness.';
+
+        // Per-error-kind client messages
+        let answer = data.answer || '';
+        if (!answer) {
+          if (data.errorKind === 'rate_limit') {
+            answer = '⏳ The Oracle is busy — try again in a minute.';
+          } else if (data.errorKind === 'empty_answer') {
+            answer = '🤔 The Oracle had no answer. Try rephrasing your question.';
+          } else if (data.errorKind === 'network_error') {
+            answer = '⚠️ The Oracle is temporarily unreachable. For privacy help, try ssd.eff.org.';
+          } else {
+            answer = 'The Oracle perceives an ethereal blankness.';
+          }
+        }
+
         appendMessage('model', answer, {
           tier: data.tier,
           sources: data.sources || [],
-          showChips: Boolean(data.showChips)
+          showChips: Boolean(data.showChips),
+          groundingNote: data.groundingNote || null
         });
 
-        // Only store Tier 1 & 2 real exchanges in history (not rejections)
+        // Debug info box in Oracle tab when ?debug=1
+        if (isDebug && (data.error || data.stage)) {
+          const debugEl = document.createElement('div');
+          debugEl.className = 'oracle-msg oracle-msg-model oracle-debug-msg';
+          debugEl.innerHTML = `
+            <div class="oracle-msg-avatar">🐛</div>
+            <div class="oracle-msg-bubble oracle-debug-bubble">
+              <span class="oracle-tier-tag oracle-tier-other">DEBUG</span>
+              <pre class="oracle-debug-pre">${escapeHtml(JSON.stringify({
+                stage: data.stage,
+                upstreamStatus: data.upstreamStatus,
+                finishReason: data.finishReason,
+                message: data.message,
+                errorKind: data.errorKind,
+                model: data.model
+              }, null, 2))}</pre>
+            </div>`;
+          messagesContainer.appendChild(debugEl);
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Only store real exchanges in history (not rejections/errors)
         if (data.tier === 'scan' || data.tier === 'privacy_security') {
           chatHistory.push({ role: 'user', text: trimmed });
           chatHistory.push({ role: 'model', text: answer });
           while (chatHistory.length > 4) chatHistory.shift();
         }
       } else {
+        // HTTP-level error (rate limit, auth, etc.)
         const errJson = await response.json().catch(() => null);
-        const errMsg = errJson?.error || `Oracle unavailable (HTTP ${response.status})`;
-        appendMessage('model', `⚠️ ${errMsg}`);
+        let errMsg;
+        if (response.status === 429) {
+          errMsg = '⏳ The Oracle is busy — rate limit reached. Try again in a minute.';
+        } else {
+          errMsg = errJson?.error || `Oracle unavailable (HTTP ${response.status})`;
+        }
+        appendMessage('model', errMsg);
       }
     } catch (err) {
       loadingEl.remove();
       appendMessage('model', '⚠️ The Oracle could not be reached through the network veil.');
+      if (isDebug) console.error('[Oracle debug] fetch error:', err);
     } finally {
       input.disabled = false;
       if (sendBtn) sendBtn.disabled = false;
@@ -2354,9 +2417,5 @@ function initOracleChat(fingerprint, score) {
     });
   });
 }
-
-
-
-
 
 

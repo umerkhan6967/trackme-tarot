@@ -4877,6 +4877,27 @@ html, body {
   margin-top: 0.6rem;
 }
 
+/* ─── Oracle Debug Bubble ────────────────────────────────────────────────── */
+.oracle-debug-bubble {
+  background: rgba(251, 191, 36, 0.06) !important;
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
 
+.oracle-debug-pre {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.65rem;
+  color: #fbbf24;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0.4rem 0 0;
+  line-height: 1.5;
+}
 
+/* ─── Grounding Note (no-sources fallback label) ────────────────────────── */
+.oracle-grounding-note {
+  font-size: 0.65rem;
+  color: #f59e0b;
+  margin: 0.4rem 0 0;
+  line-height: 1.4;
+}
 
