@@ -1043,6 +1043,59 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
     `;
   }
 
+  // Tab 5: Ask the Oracle (chat in its own tab)
+  const tabOracleEl = document.getElementById('tab-panel-oracle');
+  if (tabOracleEl) {
+    tabOracleEl.innerHTML = `
+      <div class="tab-panel-inner">
+        <div class="tab-panel-header">
+          <h4 class="tab-heading">ASK THE ORACLE</h4>
+          <p class="tab-sub">Direct consultation with the cyber-tarot intelligence. In-memory only.</p>
+        </div>
+        <div class="oracle-chat-card">
+          <div class="oracle-chat-messages" id="oracle-chat-messages" role="log" aria-live="polite">
+            <div class="oracle-msg oracle-msg-model">
+              <div class="oracle-msg-avatar">🔮</div>
+              <div class="oracle-msg-bubble">
+                <p>I am the Oracle of TrackMe Tarot. Ask me anything about what your browser reveals, or select a suggestion below. I speak strictly from your verified device facts in under 90 words.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="oracle-chips-section">
+            <span class="oracle-chips-label">&gt; SUGGESTED INQUIRIES</span>
+            <div class="oracle-chips-grid">
+              <button class="oracle-chip" type="button" data-question="Am I easy to track?">Am I easy to track?</button>
+              <button class="oracle-chip" type="button" data-question="What does my GPU reveal?">What does my GPU reveal?</button>
+              <button class="oracle-chip" type="button" data-question="How do I hide my fingerprint?">How do I hide my fingerprint?</button>
+              <button class="oracle-chip" type="button" data-question="What can't websites see?">What can't websites see?</button>
+            </div>
+          </div>
+
+          <form id="oracle-form" class="oracle-input-form" autocomplete="off">
+            <div class="oracle-input-wrap">
+              <input
+                type="text"
+                id="oracle-input"
+                class="oracle-input"
+                placeholder="Ask the Oracle about your privacy (max 200 chars)..."
+                maxlength="200"
+                required
+              />
+              <span id="oracle-char-count" class="oracle-char-count">0/200</span>
+            </div>
+            <button id="oracle-send-btn" class="cyber-btn primary oracle-send-btn" type="submit">
+              <span>Ask ✦</span>
+            </button>
+          </form>
+          <div class="oracle-privacy-footnote">
+            🔒 Ephemeral in-memory visit history • 200 char max • Rate-limited to 10 questions/min • Nothing stored
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   // Debug console injection
   const debugContainer = document.getElementById('debug-container');
   if (debugContainer) {
@@ -1054,6 +1107,7 @@ export function renderTarotCard(container, { fortune, fingerprint, score }) {
   initTabs();
   initConnectionReveal();
   initBehaviourTest(fingerprint);
+  initOracleChat(fingerprint, score);
   initShareModal({ canvas, storySlides, fortune, score, fingerprint });
 
   return canvas;
@@ -1745,5 +1799,185 @@ export function initBehaviourTest(fingerprint) {
     });
   }
 }
+
+/**
+ * Escapes HTML characters to prevent XSS in chat
+ */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Initializes the "Ask the Oracle" chat tab component
+ */
+function initOracleChat(fingerprint, score) {
+  const form = document.getElementById('oracle-form');
+  const input = document.getElementById('oracle-input');
+  const charCount = document.getElementById('oracle-char-count');
+  const sendBtn = document.getElementById('oracle-send-btn');
+  const messagesContainer = document.getElementById('oracle-chat-messages');
+  const chips = document.querySelectorAll('.oracle-chip');
+
+  if (!form || !input || !messagesContainer) return;
+
+  // In-memory chat history for current visit only (last 4 turns)
+  const chatHistory = [];
+
+  // Extract verified browser telemetry facts
+  const facts = [];
+  facts.push(`Exposure Score: ${score.score}/100 (${score.level})`);
+  facts.push(`Operating System: ${fingerprint.os || fingerprint.platform || 'Unknown OS'}`);
+  if (fingerprint.screen?.resolution || fingerprint.resolution) {
+    facts.push(`Screen Resolution: ${fingerprint.screen?.resolution || fingerprint.resolution}`);
+  }
+  if (fingerprint.screen?.refreshRate || fingerprint.refreshRate) {
+    facts.push(`Refresh Rate: ${fingerprint.screen?.refreshRate || fingerprint.refreshRate} Hz`);
+  }
+  if (fingerprint.hardware?.cores || fingerprint.cores) {
+    facts.push(`CPU Cores: ${fingerprint.hardware?.cores || fingerprint.cores}`);
+  }
+  if (fingerprint.hardware?.deviceMemory || fingerprint.deviceMemory) {
+    facts.push(`Device Memory: ${fingerprint.hardware?.deviceMemory || fingerprint.deviceMemory}`);
+  }
+  if (fingerprint.gpuRenderer) {
+    facts.push(`Graphics Card: ${fingerprint.gpuRenderer}`);
+  }
+  if (fingerprint.languages?.primary || fingerprint.language) {
+    facts.push(`Language: ${fingerprint.languages?.primary || fingerprint.language}`);
+  }
+  if (fingerprint.fontsInstalledCount !== undefined) {
+    facts.push(`Installed Fonts Count: ${fingerprint.fontsInstalledCount}`);
+  }
+  if (fingerprint.dnt) {
+    facts.push(`Do Not Track: ${fingerprint.dnt}`);
+  }
+  if (fingerprint.gpc) {
+    facts.push(`Global Privacy Control: ${fingerprint.gpc}`);
+  }
+  if (fingerprint.badge?.name) {
+    facts.push(`Identity Badge: ${fingerprint.badge.name} ("${fingerprint.badge.rule}")`);
+  }
+
+  // Live character counter
+  input.addEventListener('input', () => {
+    const len = input.value.length;
+    if (charCount) charCount.textContent = `${len}/200`;
+    if (len > 200) {
+      charCount.style.color = '#ff4757';
+      if (sendBtn) sendBtn.disabled = true;
+    } else {
+      charCount.style.color = 'var(--text-muted)';
+      if (sendBtn) sendBtn.disabled = false;
+    }
+  });
+
+  function appendMessage(role, text) {
+    const msgEl = document.createElement('div');
+    msgEl.className = `oracle-msg oracle-msg-${role === 'user' ? 'user' : 'model'}`;
+    const avatar = role === 'user' ? '👤' : '🔮';
+    msgEl.innerHTML = `
+      <div class="oracle-msg-avatar">${avatar}</div>
+      <div class="oracle-msg-bubble">
+        <p>${escapeHtml(text)}</p>
+      </div>
+    `;
+    messagesContainer.appendChild(msgEl);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    return msgEl;
+  }
+
+  function appendLoadingMessage() {
+    const loaderEl = document.createElement('div');
+    loaderEl.className = 'oracle-msg oracle-msg-model oracle-msg-loading';
+    loaderEl.innerHTML = `
+      <div class="oracle-msg-avatar">🔮</div>
+      <div class="oracle-msg-bubble">
+        <div class="oracle-typing-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <span class="oracle-loading-text">The Oracle is consulting the digital ether...</span>
+      </div>
+    `;
+    messagesContainer.appendChild(loaderEl);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    return loaderEl;
+  }
+
+  async function handleSendQuestion(questionText) {
+    const trimmed = questionText.trim();
+    if (!trimmed || trimmed.length > 200) return;
+
+    // Append user message
+    appendMessage('user', trimmed);
+    input.value = '';
+    if (charCount) charCount.textContent = '0/200';
+    input.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
+
+    // Show loading indicator
+    const loadingEl = appendLoadingMessage();
+
+    try {
+      const response = await fetch('/api/oracle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          question: trimmed,
+          facts,
+          history: chatHistory.slice(-4)
+        })
+      });
+
+      loadingEl.remove();
+
+      if (response.ok) {
+        const data = await response.json();
+        const answer = data.answer || 'The Oracle perceives an ethereal blankness.';
+        appendMessage('model', answer);
+
+        // Update in-memory history (last 4 turns)
+        chatHistory.push({ role: 'user', text: trimmed });
+        chatHistory.push({ role: 'model', text: answer });
+        while (chatHistory.length > 4) {
+          chatHistory.shift();
+        }
+      } else {
+        const errJson = await response.json().catch(() => null);
+        const errMsg = errJson?.error || `Oracle unavailable (HTTP ${response.status})`;
+        appendMessage('model', `⚠️ ${errMsg}`);
+      }
+    } catch (err) {
+      loadingEl.remove();
+      appendMessage('model', '⚠️ The Oracle could not be reached through the network veil.');
+    } finally {
+      input.disabled = false;
+      if (sendBtn) sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  // Handle form submit
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    handleSendQuestion(input.value);
+  });
+
+  // Handle suggestion chip clicks
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const q = chip.getAttribute('data-question') || chip.textContent;
+      handleSendQuestion(q);
+    });
+  });
+}
+
 
 

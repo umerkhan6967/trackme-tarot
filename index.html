@@ -149,7 +149,7 @@
         </div>
         <div id="copy-feedback" class="copy-feedback hidden" aria-live="polite"></div>
 
-        <!-- 4. Tab Bar with 4 tabs (only one visible at a time) -->
+        <!-- 4. Tab Bar with tabs (only one visible at a time) -->
         <div class="result-tabs-container" id="result-tabs-container">
           <div class="result-tabs-nav" role="tablist" aria-label="Result details tabs">
             <button class="tab-nav-btn active" id="tab-btn-why" role="tab" aria-selected="true" aria-controls="tab-panel-why" data-tab="why">
@@ -163,6 +163,9 @@
             </button>
             <button class="tab-nav-btn" id="tab-btn-more" role="tab" aria-selected="false" aria-controls="tab-panel-more" data-tab="more">
               Try more
+            </button>
+            <button class="tab-nav-btn" id="tab-btn-oracle" role="tab" aria-selected="false" aria-controls="tab-panel-oracle" data-tab="oracle">
+              🔮 Ask the Oracle
             </button>
           </div>
 
@@ -178,6 +181,9 @@
 
             <!-- Tab 4: Try more (connection reveal, behaviour test) -->
             <div class="result-tab-panel" id="tab-panel-more" role="tabpanel" aria-labelledby="tab-btn-more" hidden></div>
+
+            <!-- Tab 5: Ask the Oracle (privacy consultation chat) -->
+            <div class="result-tab-panel" id="tab-panel-oracle" role="tabpanel" aria-labelledby="tab-btn-oracle" hidden></div>
           </div>
         </div>
 

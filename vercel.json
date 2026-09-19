@@ -6,10 +6,14 @@
   "functions": {
     "api/fortune.js": {
       "maxDuration": 30
+    },
+    "api/oracle.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
     { "source": "/api/fortune", "destination": "/api/fortune.js" },
-    { "source": "/api/network", "destination": "/api/network.js" }
+    { "source": "/api/network", "destination": "/api/network.js" },
+    { "source": "/api/oracle", "destination": "/api/oracle.js" }
   ]
 }
