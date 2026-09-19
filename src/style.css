@@ -4799,8 +4799,83 @@ html, body {
   }
 }
 
+/* ─── Oracle Three-Tier Tags ──────────────────────────────────────────────── */
+.oracle-tier-tag {
+  display: inline-block;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  margin-bottom: 0.35rem;
+}
 
+.oracle-tier-scan {
+  background: rgba(0, 255, 157, 0.12);
+  color: var(--neon-green);
+  border: 1px solid rgba(0, 255, 157, 0.25);
+}
 
+.oracle-tier-web {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.oracle-tier-refused,
+.oracle-tier-other {
+  background: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+/* ─── Oracle Sources ──────────────────────────────────────────────────────── */
+.oracle-sources {
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.oracle-sources-label {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.oracle-sources-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.oracle-source-link {
+  font-size: 0.7rem;
+  color: #38bdf8;
+  text-decoration: none;
+  word-break: break-all;
+  transition: color 0.15s;
+}
+
+.oracle-source-link:hover {
+  color: #7dd3fc;
+  text-decoration: underline;
+}
+
+/* ─── Oracle Inline Chips (on Tier 3 refusal) ────────────────────────────── */
+.oracle-chips-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
 
 
 

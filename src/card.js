@@ -2189,18 +2189,80 @@ function initOracleChat(fingerprint, score) {
     }
   });
 
-  function appendMessage(role, text) {
+  /**
+   * Appends a user or model message to the chat.
+   * @param {string} role - 'user' | 'model'
+   * @param {string} text - Message text (will be escaped)
+   * @param {object} [opts] - Optional: { tier, sources }
+   */
+  function appendMessage(role, text, opts = {}) {
     const msgEl = document.createElement('div');
     msgEl.className = `oracle-msg oracle-msg-${role === 'user' ? 'user' : 'model'}`;
     const avatar = role === 'user' ? '👤' : '🔮';
+
+    // Tier tag
+    let tierTagHtml = '';
+    if (role !== 'user' && opts.tier) {
+      if (opts.tier === 'scan') {
+        tierTagHtml = `<span class="oracle-tier-tag oracle-tier-scan">From your scan</span>`;
+      } else if (opts.tier === 'privacy_security') {
+        tierTagHtml = `<span class="oracle-tier-tag oracle-tier-web">General knowledge, with sources</span>`;
+      } else if (opts.tier === 'harmful') {
+        tierTagHtml = `<span class="oracle-tier-tag oracle-tier-refused">Request declined</span>`;
+      } else if (opts.tier === 'other') {
+        tierTagHtml = `<span class="oracle-tier-tag oracle-tier-other">Out of scope</span>`;
+      }
+    }
+
+    // Sources
+    let sourcesHtml = '';
+    if (opts.sources && opts.sources.length > 0) {
+      const validSources = opts.sources.filter(s => s.url && s.title);
+      if (validSources.length > 0) {
+        sourcesHtml = `
+          <div class="oracle-sources">
+            <span class="oracle-sources-label">Sources</span>
+            <ul class="oracle-sources-list">
+              ${validSources.slice(0, 4).map(s => `
+                <li><a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" class="oracle-source-link">${escapeHtml(s.title)}</a></li>
+              `).join('')}
+            </ul>
+          </div>`;
+      }
+    }
+
+    // Chips re-shown on Tier 3 rejections
+    let chipsHtml = '';
+    if (opts.showChips) {
+      chipsHtml = `
+        <div class="oracle-chips-inline">
+          <button class="oracle-chip" type="button" data-question="Am I easy to track?">Am I easy to track?</button>
+          <button class="oracle-chip" type="button" data-question="What does my GPU reveal?">What does my GPU reveal?</button>
+          <button class="oracle-chip" type="button" data-question="How do I hide my fingerprint?">How do I hide my fingerprint?</button>
+          <button class="oracle-chip" type="button" data-question="What can't websites see?">What can't websites see?</button>
+        </div>`;
+    }
+
     msgEl.innerHTML = `
       <div class="oracle-msg-avatar">${avatar}</div>
       <div class="oracle-msg-bubble">
+        ${tierTagHtml}
         <p>${escapeHtml(text)}</p>
+        ${sourcesHtml}
+        ${chipsHtml}
       </div>
     `;
     messagesContainer.appendChild(msgEl);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Wire inline chip clicks
+    msgEl.querySelectorAll('.oracle-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const q = chip.getAttribute('data-question') || chip.textContent;
+        handleSendQuestion(q);
+      });
+    });
+
     return msgEl;
   }
 
@@ -2238,9 +2300,7 @@ function initOracleChat(fingerprint, score) {
     try {
       const response = await fetch('/api/oracle', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question: trimmed,
           facts,
@@ -2253,13 +2313,17 @@ function initOracleChat(fingerprint, score) {
       if (response.ok) {
         const data = await response.json();
         const answer = data.answer || 'The Oracle perceives an ethereal blankness.';
-        appendMessage('model', answer);
+        appendMessage('model', answer, {
+          tier: data.tier,
+          sources: data.sources || [],
+          showChips: Boolean(data.showChips)
+        });
 
-        // Update in-memory history (last 4 turns)
-        chatHistory.push({ role: 'user', text: trimmed });
-        chatHistory.push({ role: 'model', text: answer });
-        while (chatHistory.length > 4) {
-          chatHistory.shift();
+        // Only store Tier 1 & 2 real exchanges in history (not rejections)
+        if (data.tier === 'scan' || data.tier === 'privacy_security') {
+          chatHistory.push({ role: 'user', text: trimmed });
+          chatHistory.push({ role: 'model', text: answer });
+          while (chatHistory.length > 4) chatHistory.shift();
         }
       } else {
         const errJson = await response.json().catch(() => null);
@@ -2290,6 +2354,9 @@ function initOracleChat(fingerprint, score) {
     });
   });
 }
+
+
+
 
 
 
